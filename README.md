@@ -4,6 +4,6 @@
 
 - Version: v1.0.0
 - GitHub Release: https://github.com/vikingleo/ai-sign-in-gateway/releases/tag/v1.0.0
-- Source commit: f08f6c2
+- Source commit: f441499
 
 校验文件: ai-sign-in-gateway-v1.0.0-SHA256SUMS.txt

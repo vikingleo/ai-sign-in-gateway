@@ -16,5 +16,4 @@
 
 ### Commits since last release
 
-f08f6c2 Fix release publishing without local gh
-d5d62a7 Import ai-sign-in-gateway application
+f441499 Trigger release publishing from tags

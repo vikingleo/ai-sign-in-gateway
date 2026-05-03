@@ -1,5 +1,5 @@
 app=ai-sign-in-gateway
-version=v1.0.0
-built_at=2026-04-30T02:52:25+08:00
-source_commit=f44149984c2c6260b01076c3571f10b5116fc91e
-github_release=https://github.com/vikingleo/ai-sign-in-gateway/releases/tag/v1.0.0
+version=v1.0.1
+built_at=2026-05-04T02:34:06+08:00
+source_commit=ffb6a40bcfa6fe1ff2d68a9527ef44711588fb90
+github_release=https://github.com/vikingleo/ai-sign-in-gateway/releases/tag/v1.0.1

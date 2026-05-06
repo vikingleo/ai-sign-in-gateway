@@ -1,4 +1,4 @@
-## v1.0.2
+## v1.0.4
 
 ### Downloads
 
@@ -6,7 +6,7 @@
 - ai-sign-in-gateway-server-linux-amd64
 - ai-sign-in-gateway-windows-amd64.exe
 - ai-sign-in-gateway-x86_64.AppImage
-- ai-sign-in-gateway-v1.0.2-SHA256SUMS.txt
+- ai-sign-in-gateway-v1.0.4-SHA256SUMS.txt
 
 ### Defaults
 
@@ -16,4 +16,4 @@
 
 ### Commits since last release
 
-0f371c6 修正发布产物分支同步顺序
+48663a0 修复发布版本一致性校验

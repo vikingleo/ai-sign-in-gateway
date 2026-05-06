@@ -1,4 +1,4 @@
-## v1.0.3
+## v1.0.2
 
 ### Downloads
 
@@ -6,7 +6,7 @@
 - ai-sign-in-gateway-server-linux-amd64
 - ai-sign-in-gateway-windows-amd64.exe
 - ai-sign-in-gateway-x86_64.AppImage
-- ai-sign-in-gateway-v1.0.3-SHA256SUMS.txt
+- ai-sign-in-gateway-v1.0.2-SHA256SUMS.txt
 
 ### Defaults
 

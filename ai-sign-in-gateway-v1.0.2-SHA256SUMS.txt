@@ -1,0 +1,4 @@
+4b0ba0cee711359b5fd38488c7b3a270b4e4e08557bf24425a17c6b8c164b8eb  ai-sign-in-gateway
+e957a12501a5d84af3bd585628aef2da6d41bd99ad3f6699327e63aa1003d33b  ai-sign-in-gateway-server-linux-amd64
+ee80718fa345e3918b8bdbbc24f689cbe2127adc5e41254bf7a2a4cf71735d90  ai-sign-in-gateway-windows-amd64.exe
+d9b5cd7af65662a901925ccd87fa47b86e9873798892d8e6ff8875812e54ee21  ai-sign-in-gateway-x86_64.AppImage

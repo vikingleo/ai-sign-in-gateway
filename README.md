@@ -2,8 +2,8 @@
 
 此分支只保存最新发布产物，不保存源码。
 
-- Version: v1.0.4
-- GitHub Release: https://github.com/vikingleo/ai-sign-in-gateway/releases/tag/v1.0.4
-- Source commit: 48663a0
+- Version: v1.0.5
+- GitHub Release: https://github.com/vikingleo/ai-sign-in-gateway/releases/tag/v1.0.5
+- Source commit: b677949
 
-校验文件: ai-sign-in-gateway-v1.0.4-SHA256SUMS.txt
+校验文件: ai-sign-in-gateway-v1.0.5-SHA256SUMS.txt

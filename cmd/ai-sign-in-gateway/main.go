@@ -195,7 +195,10 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	defer database.Close(db)
+	app := handlers.NewApp(db, cfg)
+	defer func() {
+		_ = database.Close(app.DB)
+	}()
 	if err := migrations.Apply(db); err != nil {
 		return err
 	}
@@ -203,7 +206,7 @@ func run() error {
 		return err
 	}
 
-	api := handlers.NewRouter(db, cfg)
+	api := app.Router()
 	backendURL := browserURL(host, actualBackendPort)
 	gatewayURL := backendURL + "/api/gateway"
 
@@ -248,8 +251,9 @@ func run() error {
 
 		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 		defer stop()
-		go services.RunDatabaseBackupLoop(ctx, cfg.SQLitePath())
-		go services.RunLogCleanupLoop(ctx, cfg.SQLitePath())
+		go handlers.RunCheckinSchedulerLoop(ctx, app)
+		go services.RunDatabaseBackupLoopWithProvider(ctx, runtimeDatabasePathProvider(cfg))
+		go services.RunLogCleanupLoopWithProvider(ctx, runtimeDatabasePathProvider(cfg))
 		log.Printf("%s 前端正在监听 %s", appName, frontendURL)
 		log.Printf("%s 后端正在监听 %s", appName, backendURL)
 		log.Printf("网关请求地址: %s", gatewayURL)
@@ -269,7 +273,7 @@ func run() error {
 			BackendURL:  backendURL,
 			GatewayURL:  gatewayURL,
 			ConfigDir:   configDir,
-			DB:          db,
+			App:         app,
 			Backend:     backendServer,
 			Frontend:    frontendServer,
 			BackendLn:   backendLn,
@@ -300,8 +304,9 @@ func run() error {
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	go services.RunDatabaseBackupLoop(ctx, cfg.SQLitePath())
-	go services.RunLogCleanupLoop(ctx, cfg.SQLitePath())
+	go handlers.RunCheckinSchedulerLoop(ctx, app)
+	go services.RunDatabaseBackupLoopWithProvider(ctx, runtimeDatabasePathProvider(cfg))
+	go services.RunLogCleanupLoopWithProvider(ctx, runtimeDatabasePathProvider(cfg))
 	go func() {
 		<-ctx.Done()
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -330,6 +335,15 @@ func run() error {
 		return nil
 	}
 	return err
+}
+
+func runtimeDatabasePathProvider(cfg config.Config) func() string {
+	return func() string {
+		if path := strings.TrimSpace(handlers.GetRuntimeInfo().DatabasePath); path != "" {
+			return path
+		}
+		return cfg.SQLitePath()
+	}
 }
 
 func parseCommand(args []string) (commandOptions, error) {
@@ -416,7 +430,7 @@ func printStartupSummary(output io.Writer, summary startupSummary) {
 		fmt.Fprintln(output, "密码状态: 已修改，明文不可读取")
 	} else {
 		fmt.Fprintf(output, "默认用户名: %s\n", username)
-		fmt.Fprintf(output, "默认密码: %s\n", passwordLine)
+		fmt.Fprintln(output, "默认密码: 已设置，明文不在启动日志显示")
 	}
 
 	stopCommand := stopCommandForSummary(summary)
@@ -872,6 +886,9 @@ func serveFrontend(dist string, w http.ResponseWriter, r *http.Request) {
 			if contentType := frontendContentType(requested); contentType != "" {
 				w.Header().Set("Content-Type", contentType)
 			}
+			if cleanPath == "index.html" {
+				setFrontendIndexCacheHeaders(w)
+			}
 			http.ServeFile(w, r, requested)
 			return
 		}
@@ -880,6 +897,7 @@ func serveFrontend(dist string, w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	setFrontendIndexCacheHeaders(w)
 	http.ServeFile(w, r, filepath.Join(dist, "index.html"))
 }
 
@@ -897,6 +915,9 @@ func serveEmbeddedFrontend(frontend fs.FS, w http.ResponseWriter, r *http.Reques
 		if contentType := frontendContentType(cleanPath); contentType != "" {
 			w.Header().Set("Content-Type", contentType)
 		}
+		if cleanPath == "index.html" {
+			setFrontendIndexCacheHeaders(w)
+		}
 		http.ServeContent(w, r, cleanPath, info.ModTime(), mustOpenEmbedded(frontend, cleanPath))
 		return
 	}
@@ -912,7 +933,12 @@ func serveEmbeddedFrontend(frontend fs.FS, w http.ResponseWriter, r *http.Reques
 	if contentType := mime.TypeByExtension(".html"); contentType != "" {
 		w.Header().Set("Content-Type", contentType)
 	}
+	setFrontendIndexCacheHeaders(w)
 	http.ServeContent(w, r, "index.html", time.Time{}, bytes.NewReader(index))
+}
+
+func setFrontendIndexCacheHeaders(w http.ResponseWriter) {
+	w.Header().Set("Cache-Control", "no-cache")
 }
 
 func mustOpenEmbedded(frontend fs.FS, name string) *bytes.Reader {

@@ -1,0 +1,330 @@
+/* ============================================================
+ * Soft light theme polish (added 2026-04)
+ * Goal: cohesive radius, shadow, color & spacing across antd shells
+ * ============================================================ */
+
+body {
+  color: var(--text-main);
+  background: var(--bg-page);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(31, 42, 68, 0.16);
+  border-radius: var(--radius-xs);
+  border: 2px solid var(--bg-page);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(31, 42, 68, 0.28);
+}
+
+.ant-card {
+  border-radius: var(--radius-container) !important;
+  border: 1px solid var(--border-muted) !important;
+  box-shadow: var(--shadow-card) !important;
+  background: var(--bg-panel) !important;
+  transition: box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.admin-card {
+  border-radius: var(--radius-container) !important;
+}
+
+.admin-card .ant-card-head {
+  border-bottom: 1px solid var(--border-muted);
+  padding: 0 14px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.admin-card .ant-card-head-title {
+  font-size: 14px;
+}
+
+.ant-btn {
+  border-radius: var(--radius-control) !important;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+.ant-btn:not(:disabled):not(.ant-btn-disabled):hover {
+  box-shadow: var(--shadow-control-hover);
+  transform: translateY(-1px);
+}
+
+.ant-btn:not(:disabled):not(.ant-btn-disabled):active {
+  box-shadow: var(--shadow-control-active);
+  transform: translateY(0);
+}
+
+.ant-btn:focus-visible {
+  box-shadow: var(--focus-ring) !important;
+}
+
+.ant-btn[disabled],
+.ant-btn.ant-btn-disabled {
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.ant-btn-primary {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+  box-shadow: 0 1px 0 rgba(15, 32, 68, 0.04);
+}
+
+.ant-btn-primary:hover,
+.ant-btn-primary:focus {
+  background: var(--accent-strong) !important;
+  border-color: var(--accent-strong) !important;
+}
+
+.ant-btn-primary:not(:disabled):not(.ant-btn-disabled):hover {
+  box-shadow: 0 6px 14px rgba(37, 99, 235, 0.24);
+}
+
+.ant-btn-default {
+  border-color: var(--border-soft) !important;
+  color: var(--text-main) !important;
+  background: var(--bg-panel) !important;
+}
+
+.ant-btn-default:hover {
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+  background: var(--accent-soft) !important;
+}
+
+.ant-btn-link {
+  color: var(--accent) !important;
+}
+
+.ant-btn-dangerous {
+  color: var(--danger) !important;
+  border-color: var(--danger) !important;
+}
+
+.ant-btn-dangerous:hover {
+  background: var(--danger-soft) !important;
+}
+
+button:not(.ant-btn):not(:disabled) {
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+button:not(.ant-btn):not(:disabled):hover {
+  box-shadow: var(--shadow-control-hover);
+  transform: translateY(-1px);
+}
+
+button:not(.ant-btn):not(:disabled):active {
+  box-shadow: var(--shadow-control-active);
+  transform: translateY(0);
+}
+
+button:not(.ant-btn):focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.ant-input-number-handler {
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.ant-input-number-handler:not(.ant-input-number-handler-up-disabled):not(.ant-input-number-handler-down-disabled) {
+  cursor: pointer;
+}
+
+.ant-input-number-handler-up-disabled,
+.ant-input-number-handler-down-disabled {
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.ant-input-number-handler:not(.ant-input-number-handler-up-disabled):not(.ant-input-number-handler-down-disabled):hover,
+.ant-input-number-handler:not(.ant-input-number-handler-up-disabled):not(.ant-input-number-handler-down-disabled):focus-visible {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.18);
+}
+
+.ant-input-number-handler:not(.ant-input-number-handler-up-disabled):not(.ant-input-number-handler-down-disabled):active {
+  background: rgba(37, 99, 235, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.28);
+}
+
+.ant-input,
+.ant-input-number,
+.ant-input-password,
+.ant-select-selector,
+.ant-picker {
+  border-radius: var(--radius-control) !important;
+  border-color: var(--border-soft) !important;
+  background: var(--bg-panel) !important;
+}
+
+.ant-input:focus,
+.ant-input-focused,
+.ant-input-number-focused,
+.ant-input-password.ant-input-affix-wrapper-focused,
+.ant-select-focused .ant-select-selector,
+.ant-picker-focused {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px rgba(79, 124, 255, 0.16) !important;
+}
+
+.ant-tag {
+  border-radius: var(--radius-control) !important;
+  border: 1px solid transparent;
+  padding: 0 10px;
+}
+
+.ant-tag-blue,
+.ant-tag-processing {
+  background: var(--info-soft) !important;
+  border-color: transparent !important;
+  color: var(--accent-strong) !important;
+}
+
+.ant-tag-green,
+.ant-tag-success {
+  background: var(--success-soft) !important;
+  color: var(--success) !important;
+  border-color: transparent !important;
+}
+
+.ant-tag-gold,
+.ant-tag-warning {
+  background: var(--warning-soft) !important;
+  color: var(--warning-strong) !important;
+  border-color: transparent !important;
+}
+
+.ant-tag-red,
+.ant-tag-error {
+  background: var(--danger-soft) !important;
+  color: var(--danger) !important;
+  border-color: transparent !important;
+}
+
+.ant-table-thead > tr > th {
+  background: var(--bg-muted) !important;
+  color: var(--text-muted) !important;
+  font-weight: 600 !important;
+  border-bottom: 1px solid var(--border-muted) !important;
+}
+
+.ant-table-tbody > tr:hover > td {
+  background: rgba(79, 124, 255, 0.04) !important;
+}
+
+.table-fill--management .ant-table-cell-fix-right,
+.table-fill--management .ant-table-cell-fix-right-first,
+.table-fill--management .ant-table-cell-fix-left,
+.table-fill--management .ant-table-cell-fix-left-last {
+  background: var(--bg-panel) !important;
+  background-clip: padding-box;
+  z-index: 3;
+}
+
+.table-fill--management .ant-table-thead > tr > th.ant-table-cell-fix-right,
+.table-fill--management .ant-table-thead > tr > th.ant-table-cell-fix-right-first,
+.table-fill--management .ant-table-thead > tr > th.ant-table-cell-fix-left,
+.table-fill--management .ant-table-thead > tr > th.ant-table-cell-fix-left-last {
+  background: var(--bg-muted) !important;
+  z-index: 5;
+}
+
+.table-fill--management .ant-table-tbody > tr:hover > td.ant-table-cell-fix-right,
+.table-fill--management .ant-table-tbody > tr:hover > td.ant-table-cell-fix-right-first,
+.table-fill--management .ant-table-tbody > tr:hover > td.ant-table-cell-fix-left,
+.table-fill--management .ant-table-tbody > tr:hover > td.ant-table-cell-fix-left-last {
+  background: var(--table-hover-bg) !important;
+}
+
+.table-fill--management .ant-table-tbody > tr.management-row--active > td.ant-table-cell-fix-right,
+.table-fill--management .ant-table-tbody > tr.management-row--active > td.ant-table-cell-fix-right-first,
+.table-fill--management .ant-table-tbody > tr.management-row--active > td.ant-table-cell-fix-left,
+.table-fill--management .ant-table-tbody > tr.management-row--active > td.ant-table-cell-fix-left-last,
+.table-fill--management .ant-table-tbody > tr.ant-table-row-selected > td.ant-table-cell-fix-right,
+.table-fill--management .ant-table-tbody > tr.ant-table-row-selected > td.ant-table-cell-fix-right-first,
+.table-fill--management .ant-table-tbody > tr.ant-table-row-selected > td.ant-table-cell-fix-left,
+.table-fill--management .ant-table-tbody > tr.ant-table-row-selected > td.ant-table-cell-fix-left-last {
+  background: var(--table-selected-bg) !important;
+}
+
+.ant-pagination-item-active {
+  background: var(--accent-soft) !important;
+  border-color: var(--accent) !important;
+}
+
+.ant-pagination-item-active a {
+  color: var(--accent-strong) !important;
+}
+
+.ant-modal-content {
+  border-radius: var(--radius-container) !important;
+}
+
+.ant-drawer-content,
+.ant-drawer-header {
+  background: var(--bg-panel) !important;
+}
+
+.ant-drawer-header {
+  border-bottom: 1px solid var(--border-muted) !important;
+}
+
+.ant-alert {
+  border-radius: var(--radius-control) !important;
+  border: 1px solid var(--border-muted) !important;
+}
+
+.ant-alert-info {
+  background: var(--info-soft) !important;
+  color: var(--accent-strong) !important;
+}
+
+.ant-alert-success {
+  background: var(--success-soft) !important;
+}
+
+.ant-alert-warning {
+  background: var(--warning-soft) !important;
+}
+
+.ant-alert-error {
+  background: var(--danger-soft) !important;
+}

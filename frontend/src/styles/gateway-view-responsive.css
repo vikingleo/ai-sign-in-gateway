@@ -1,0 +1,312 @@
+@media (max-width: 720px) {
+  .gateway-route-page.gateway-route-page,
+  .gateway-monitor-page.gateway-monitor-page {
+    --control-height: 40px;
+  }
+
+  .gateway-route-page .page-stack {
+    gap: 12px;
+  }
+
+  .gateway-route-page .page-toolbar {
+    gap: 10px;
+  }
+
+  .gateway-route-page .page-toolbar,
+  .route-management-toolbar,
+  .gateway-monitor-toolbar,
+  .route-pool-filters,
+  .route-pool-searchbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .route-management-toolbar {
+    display: flex;
+  }
+
+  .gateway-route-page .page-toolbar > :last-child,
+  .gateway-toolbar-actions.ant-space {
+    width: 100%;
+  }
+
+  .gateway-route-page.gateway-route-page .gateway-toolbar-actions.ant-space {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    align-items: center !important;
+    gap: 8px !important;
+    overflow-x: visible !important;
+    padding-bottom: 0 !important;
+  }
+
+  .gateway-route-page.gateway-route-page .gateway-toolbar-actions.ant-space > .ant-space-item,
+  .gateway-route-page.gateway-route-page .gateway-toolbar-actions.ant-space .ant-btn,
+  .gateway-route-page.gateway-route-page .gateway-toolbar-actions.ant-space .route-probe-control {
+    flex: none !important;
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .gateway-route-page.gateway-route-page .gateway-toolbar-actions.ant-space .ant-btn {
+    flex: 0 0 auto !important;
+    height: var(--control-height) !important;
+    min-height: var(--control-height) !important;
+    padding-inline: 8px !important;
+  }
+
+  .gateway-route-page.gateway-route-page .gateway-toolbar-actions.ant-space .route-probe-control {
+    display: grid !important;
+    align-items: center !important;
+    height: auto !important;
+  }
+
+  .gateway-route-page.gateway-route-page .gateway-toolbar-actions.ant-space .route-probe-control .ant-btn {
+    flex: 0 0 var(--control-height) !important;
+    height: var(--control-height) !important;
+    min-height: var(--control-height) !important;
+    width: 100% !important;
+  }
+
+  .gateway-route-page.gateway-route-page .gateway-toolbar-actions.ant-space > .ant-space-item:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .gateway-monitor-page.gateway-monitor-page .gateway-toolbar-actions.ant-space {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .gateway-monitor-page.gateway-monitor-page .gateway-toolbar-actions.ant-space .ant-space-item,
+  .gateway-monitor-page.gateway-monitor-page .gateway-toolbar-actions.ant-space .ant-btn {
+    width: 100%;
+  }
+
+  .gateway-monitor-page.gateway-monitor-page .gateway-toolbar-actions.ant-space .ant-btn,
+  .gateway-route-page.gateway-route-page .route-pool-type-tabs .ant-btn,
+  .gateway-route-page.gateway-route-page .route-pool-clear.ant-btn {
+    height: var(--control-height) !important;
+    min-height: var(--control-height) !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .gateway-monitor-page.gateway-monitor-page .gateway-toolbar-actions.ant-space .ant-space-item:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .gateway-access--route {
+    flex-basis: auto;
+    width: 100%;
+  }
+
+  .gateway-access {
+    width: 100%;
+  }
+
+  .gateway-access--route {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .gateway-access--route code:first-child,
+  .gateway-access--route code:nth-of-type(2) {
+    max-width: 100%;
+  }
+
+  .route-pool-type-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .route-pool-type-tabs .ant-btn {
+    width: 100%;
+    padding-inline: 8px !important;
+  }
+
+  .route-probe-control {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .route-probe-progress {
+    width: 100%;
+  }
+
+  .route-pool-filter {
+    flex-basis: auto;
+    max-width: none;
+    width: 100%;
+  }
+
+  .route-pool-filter-switch,
+  .route-pool-switch-field,
+  .route-pool-clear {
+    width: 100%;
+  }
+
+  .route-pool-switch-field {
+    justify-content: flex-start;
+  }
+
+  .route-pool-filter-switch.ant-switch {
+    justify-self: start;
+  }
+
+  .route-pool-clear.ant-btn {
+    height: var(--control-height) !important;
+    min-height: var(--control-height) !important;
+    justify-self: stretch;
+  }
+
+  .gateway-policy-help__grid,
+  .gateway-policy-help__notes {
+    grid-template-columns: 1fr;
+  }
+
+  .gateway-metrics {
+    grid-auto-columns: minmax(220px, 1fr);
+  }
+
+  .gateway-usage-summary,
+  .gateway-strategy-board {
+    grid-template-columns: 1fr;
+  }
+
+  .route-pool-preview__row {
+    grid-template-columns: 1fr;
+  }
+
+  .gateway-route-page .table-fill--management::before,
+  .gateway-panel--usage .ant-table-wrapper::before {
+    content: "横向滑动查看表格";
+    display: block;
+    padding: 8px 10px;
+    border-top: 1px solid var(--border-muted);
+    border-radius: var(--radius-container) var(--radius-container) 0 0;
+    background: var(--bg-subtle);
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .gateway-route-page .table-fill--management .ant-table-body,
+  .gateway-panel--usage .ant-table-content {
+    scrollbar-width: thin;
+  }
+
+  .gateway-route-page .table-fill--management,
+  .gateway-panel--usage .ant-table-wrapper {
+    overflow: hidden;
+    position: relative;
+  }
+
+  .gateway-route-page .table-fill--management::after,
+  .gateway-panel--usage .ant-table-wrapper::after {
+    content: "";
+    position: absolute;
+    top: 35px;
+    right: 0;
+    bottom: 0;
+    width: 18px;
+    background: linear-gradient(to left, rgba(15, 23, 42, 0.08), rgba(15, 23, 42, 0));
+    border-bottom-right-radius: var(--radius-container);
+    pointer-events: none;
+  }
+
+  .gateway-route-page .table-fill--management .ant-table-thead > tr > th,
+  .gateway-route-page .table-fill--management .ant-table-tbody > tr > td,
+  .gateway-panel--usage .ant-table-thead > tr > th,
+  .gateway-panel--usage .ant-table-tbody > tr > td {
+    padding-inline: 8px !important;
+  }
+}
+
+@media (max-width: 960px) {
+  .gateway-policy-settings-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .gateway-overview-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'usage'
+      'route'
+      'strategy'
+      'activity';
+  }
+
+  .gateway-usage-input {
+    width: 100%;
+  }
+
+  .gateway-panel--usage .gateway-usage-range-controls.ant-space {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px !important;
+    width: 100%;
+  }
+
+  .gateway-panel--usage .gateway-usage-range-controls.ant-space > .ant-space-item {
+    min-width: 0;
+  }
+
+  .gateway-panel--usage .gateway-usage-range-controls.ant-space > .ant-space-item:nth-child(1),
+  .gateway-panel--usage .gateway-usage-range-controls.ant-space > .ant-space-item:nth-child(2),
+  .gateway-panel--usage .gateway-usage-range-controls.ant-space > .ant-space-item:nth-child(3) {
+    grid-column: 1 / -1;
+  }
+
+  .gateway-panel--usage .gateway-usage-range-controls.ant-space > .ant-space-item:nth-child(2) {
+    justify-self: center;
+  }
+
+  .gateway-panel--usage .gateway-usage-range-controls.ant-space > .ant-space-item:nth-child(4) .ant-btn,
+  .gateway-panel--usage .gateway-usage-range-controls.ant-space > .ant-space-item:nth-child(5) .ant-btn {
+    width: 100%;
+  }
+
+  .gateway-usage-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .gateway-panel__head {
+    flex-direction: column;
+  }
+
+  .gateway-log-filter-row {
+    grid-template-columns: 1fr;
+  }
+
+  .gateway-error-detail__head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .gateway-active-feed__main {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .gateway-active-feed__request,
+  .gateway-active-feed__meta,
+  .gateway-active-feed__errors {
+    flex-wrap: wrap;
+  }
+
+  .gateway-strategy-board {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 961px) and (max-width: 1320px) {
+  .gateway-overview-grid {
+    grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.9fr);
+  }
+
+  .gateway-strategy-board {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

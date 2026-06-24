@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"ai-sign-in-gateway/internal/handlers"
 	"ai-sign-in-gateway/internal/runtimecontrol"
 	"gorm.io/gorm"
 )
@@ -20,11 +21,18 @@ type desktopRuntime struct {
 	BackendURL  string
 	GatewayURL  string
 	ConfigDir   string
-	DB          *gorm.DB
+	App         *handlers.App
 	Backend     *http.Server
 	Frontend    *http.Server
 	BackendLn   net.Listener
 	FrontendLn  net.Listener
+}
+
+func (rt desktopRuntime) database() *gorm.DB {
+	if rt.App == nil {
+		return nil
+	}
+	return rt.App.DB
 }
 
 type desktopTraySnapshot struct {

@@ -1,0 +1,45 @@
+.api-key-dialog-modal .ant-modal {
+  max-width: calc(100vw - 48px);
+}
+
+.api-key-dialog-modal .ant-modal-body {
+  max-height: calc(100vh - 210px);
+  overflow: auto;
+}
+
+.api-key-dialog-modal .ant-form-item {
+  margin-bottom: 16px;
+}
+
+.api-key-dialog-modal .ant-input:not(textarea),
+.api-key-dialog-modal .ant-input-affix-wrapper,
+.api-key-dialog-modal .ant-select-single .ant-select-selector {
+  height: var(--control-height-comfort) !important;
+  min-height: var(--control-height-comfort) !important;
+}
+
+.api-key-dialog-modal .ant-input-affix-wrapper .ant-input {
+  height: auto !important;
+  min-height: 0 !important;
+}
+
+.api-key-dialog-modal textarea.ant-input {
+  min-height: 104px !important;
+}
+
+.api-key-dialog-modal textarea.ant-input[rows='2'] {
+  min-height: 84px !important;
+}
+
+.api-key-dialog-modal textarea.ant-input[rows='8'] {
+  min-height: 220px !important;
+}
+
+.api-key-dialog-modal .manual-api-key-editor__key .ant-input-affix-wrapper {
+  width: 100%;
+}
+
+.api-key-dialog-modal .manual-api-key-editor__action .ant-btn {
+  min-width: 96px;
+  height: var(--control-height-comfort);
+}

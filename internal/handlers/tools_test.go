@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"ai-sign-in-gateway/internal/models"
 	"ai-sign-in-gateway/internal/schemas"
@@ -15,6 +16,21 @@ import (
 	"github.com/go-chi/chi/v5"
 	"gorm.io/gorm"
 )
+
+func TestShortenChatSessionTextUsesASCIISuffixAndKeepsUTF8(t *testing.T) {
+	if got := shortenChatSessionText("abcdef", 5); got != "ab..." {
+		t.Fatalf("ascii shortened text = %q", got)
+	}
+	if got := shortenChatSessionText("你好世界消息", 5); got != "你好..." {
+		t.Fatalf("unicode shortened text = %q", got)
+	}
+	if got := shortenChatSessionText("你好世界消息", 2); got != "你好" {
+		t.Fatalf("small limit unicode text = %q", got)
+	}
+	if got := shortenChatSessionText("你好世界消息", 5); !utf8.ValidString(got) {
+		t.Fatalf("shortened text is invalid utf8: %q", got)
+	}
+}
 
 func TestModelListLoadsModelsFromSiteRequestURL(t *testing.T) {
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

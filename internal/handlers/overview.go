@@ -27,10 +27,15 @@ func (a *App) Overview(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var sites []models.Site
-	a.DB.Where("last_status = ? OR last_status = ?", "failed", "error").Order("updated_at desc").Limit(6).Find(&sites)
+	a.DB.
+		Where("is_enabled = ? OR last_status = ? OR last_status = ?", false, "failed", "error").
+		Order("CASE WHEN last_status IN ('failed', 'error') THEN 0 WHEN is_enabled = false THEN 1 ELSE 2 END").
+		Order("updated_at desc").
+		Limit(6).
+		Find(&sites)
 	attention := make([]schemas.OverviewAttentionSite, 0, len(sites))
 	for _, site := range sites {
-		attention = append(attention, schemas.OverviewAttentionSite{ID: site.ID, Name: site.Name, LastStatus: site.LastStatus, LastMessage: site.LastMessage, LastRunAt: site.LastRunAt})
+		attention = append(attention, overviewAttentionSite(site))
 	}
 
 	writeJSON(w, http.StatusOK, schemas.OverviewResponse{
@@ -41,4 +46,25 @@ func (a *App) Overview(w http.ResponseWriter, r *http.Request) {
 		RecentRuns:       recent,
 		AttentionSites:   attention,
 	})
+}
+
+func overviewAttentionSite(site models.Site) schemas.OverviewAttentionSite {
+	status := site.LastStatus
+	message := site.LastMessage
+	if !site.IsEnabled {
+		paused := "paused"
+		status = &paused
+		disabledMessage := "站点已停用，不参与签到和网关路由。"
+		if message != nil && *message != "" {
+			disabledMessage += "最近状态：" + *message
+		}
+		message = &disabledMessage
+	}
+	return schemas.OverviewAttentionSite{
+		ID:          site.ID,
+		Name:        site.Name,
+		LastStatus:  status,
+		LastMessage: message,
+		LastRunAt:   site.LastRunAt,
+	}
 }

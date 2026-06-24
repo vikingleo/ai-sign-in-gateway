@@ -1,0 +1,212 @@
+.gateway-metric-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border-soft) !important;
+  background: var(--bg-panel) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+.gateway-metric-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  pointer-events: none;
+}
+
+.gateway-metric-card .ant-card-body {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 6px;
+  padding: 18px 18px 16px;
+}
+
+.gateway-metric-card__label {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.gateway-metric-card__value {
+  color: #172033;
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1;
+}
+
+.gateway-metric-card--primary {
+  background: var(--bg-panel) !important;
+}
+
+.gateway-metric-card--info {
+  background: var(--bg-panel) !important;
+}
+
+.gateway-metric-card--success {
+  background: var(--bg-panel) !important;
+}
+
+.gateway-metric-card--warning {
+  background: var(--bg-panel) !important;
+}
+
+.gateway-metric-card--neutral {
+  background: var(--bg-panel) !important;
+}
+
+.gateway-policy-settings-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: var(--rhythm-3);
+  align-items: start;
+}
+
+.gateway-settings-modal-wrap .ant-modal {
+  top: 32px;
+  padding-bottom: 32px;
+}
+
+.gateway-add-upstream-modal-wrap .ant-modal {
+  top: 32px;
+  padding-bottom: 32px;
+}
+
+.gateway-settings-modal .ant-modal-content {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 64px);
+}
+
+.gateway-add-upstream-modal .ant-modal-content {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 64px);
+}
+
+.gateway-settings-modal .ant-modal-body {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.gateway-add-upstream-modal .ant-modal-body {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.gateway-policy-settings-layout__main,
+.gateway-policy-settings-layout__side {
+  min-width: 0;
+}
+
+.gateway-policy-help {
+  border: 1px solid #d9e2ef;
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 14px;
+}
+
+.gateway-policy-help__title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #24334d;
+  margin-bottom: 10px;
+}
+
+.gateway-policy-help__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.gateway-policy-help__item,
+.gateway-policy-help__notes > div {
+  border: 1px solid #e3eaf4;
+  border-radius: 6px;
+  background: #ffffff;
+  padding: 10px;
+}
+
+.gateway-policy-help__item--active {
+  border-color: #7aa7d8;
+  background: #eef6ff;
+}
+
+.gateway-policy-help strong {
+  display: block;
+  color: #24334d;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.gateway-policy-help span {
+  display: block;
+  color: #5f6f86;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.gateway-policy-help__notes {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.gateway-access {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex: 1 1 320px;
+  min-width: 0;
+  max-width: min(100%, 980px);
+}
+
+.gateway-access code {
+  display: block;
+  flex: 1 1 180px;
+  min-width: 0;
+  overflow: hidden;
+  padding: 7px 12px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: var(--radius-control);
+  background: #ffffff;
+  color: #24334d;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .gateway-settings-modal-wrap .ant-modal,
+  .gateway-add-upstream-modal-wrap .ant-modal {
+    top: 16px;
+    max-width: calc(100vw - 32px);
+    padding-bottom: 16px;
+  }
+
+  .gateway-settings-modal .ant-modal-body {
+    overflow-x: hidden;
+  }
+
+  .gateway-policy-settings-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .gateway-policy-settings-layout .ant-row {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  .gateway-policy-settings-layout .ant-col {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .gateway-policy-settings-layout__side {
+    order: -1;
+  }
+}

@@ -1,0 +1,92 @@
+.gateway-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: 10px;
+  padding-bottom: 4px;
+  overflow: visible;
+}
+
+.gateway-metric-card.ant-card {
+  position: relative;
+  min-width: 0;
+  border: 1px solid rgba(177, 189, 207, 0.32);
+  border-radius: var(--radius-container) !important;
+  background: var(--bg-panel);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.gateway-metric-card.ant-card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.gateway-metric-card.ant-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--accent);
+}
+
+.gateway-metric-card--primary.ant-card::before {
+  background: var(--accent);
+}
+.gateway-metric-card--primary.ant-card {
+  background: var(--bg-panel);
+}
+
+.gateway-metric-card--success.ant-card::before {
+  background: var(--success);
+}
+.gateway-metric-card--success.ant-card {
+  background: var(--bg-panel);
+}
+
+.gateway-metric-card--warning.ant-card::before {
+  background: var(--warning);
+}
+.gateway-metric-card--warning.ant-card {
+  background: var(--bg-panel);
+}
+
+.gateway-metric-card--info.ant-card::before {
+  background: var(--info);
+}
+.gateway-metric-card--info.ant-card {
+  background: var(--bg-panel);
+}
+
+.gateway-metric-card--neutral.ant-card::before {
+  background: var(--border-strong);
+}
+.gateway-metric-card--neutral.ant-card {
+  background: var(--bg-panel);
+}
+
+.gateway-metric-card .ant-card-body {
+  display: grid;
+  gap: 6px;
+  min-height: 76px;
+  padding: 14px 16px 14px 19px;
+  position: relative;
+  z-index: 1;
+}
+
+.gateway-metric-card__label {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+.gateway-metric-card__value {
+  color: var(--text-main);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+  font-feature-settings: 'tnum';
+}

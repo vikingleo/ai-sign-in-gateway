@@ -1,0 +1,192 @@
+/* 全站固定明色主题：覆盖网关监控旧样式，仅作用于本页。 */
+.gateway-panel__title,
+.gateway-usage-summary__item strong,
+.gateway-active-feed__route,
+.gateway-metric-card__value {
+  color: #172033;
+}
+
+.gateway-usage-card__sep,
+.gateway-usage-summary__item span,
+.gateway-active-feed-panel__pulse,
+.gateway-active-feed__request span,
+.gateway-active-feed__meta span,
+.gateway-metric-card__label {
+  color: #64748b;
+}
+
+.gateway-active-feed-panel__pulse {
+  border-color: rgba(148, 163, 184, 0.26);
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.gateway-overview-shell {
+  border-color: var(--border-soft) !important;
+  background: var(--bg-panel) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+.gateway-panel,
+.gateway-metric-card {
+  border-color: var(--border-soft) !important;
+  background: var(--bg-panel) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+.gateway-metric-card::before {
+  background: transparent;
+}
+
+.gateway-usage-input {
+  border-color: rgba(148, 163, 184, 0.34);
+  background: #ffffff;
+  color: #172033;
+}
+
+.gateway-usage-table .ant-table-thead > tr > th {
+  background: #f1f5f9 !important;
+  color: #334155;
+  border-bottom-color: rgba(148, 163, 184, 0.2) !important;
+}
+
+.gateway-usage-table .ant-table-tbody > tr > td {
+  color: #172033;
+  background: rgba(255, 255, 255, 0.82);
+  border-bottom-color: rgba(148, 163, 184, 0.16) !important;
+}
+
+.gateway-usage-summary__item,
+.gateway-usage-summary__item--primary,
+.gateway-usage-summary__item--success,
+.gateway-usage-summary__item--warning,
+.gateway-usage-summary__item--info {
+  border-color: rgba(148, 163, 184, 0.24);
+  background: var(--bg-panel);
+  box-shadow: none;
+}
+
+.gateway-active-feed--embedded {
+  border-color: rgba(148, 163, 184, 0.24);
+  background: rgba(248, 251, 255, 0.86);
+}
+
+.gateway-active-feed__item {
+  border-bottom-color: rgba(148, 163, 184, 0.16);
+}
+
+.gateway-metric-card--primary,
+.gateway-metric-card--info,
+.gateway-metric-card--success,
+.gateway-metric-card--warning,
+.gateway-metric-card--neutral {
+  background: var(--bg-panel) !important;
+}
+
+.gateway-route-page {
+  gap: var(--content-gutter);
+}
+
+.gateway-route-page .page-toolbar {
+  padding: 0;
+}
+
+.gateway-route-page .route-management-heading strong {
+  color: #1c2f57;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.gateway-route-page .route-management-heading span {
+  border-color: rgba(148, 163, 184, 0.28);
+  background: rgba(255, 255, 255, 0.86);
+  color: #5b6f94;
+}
+
+.gateway-route-page .route-pool-card--standalone {
+  border: 1px solid var(--border-soft) !important;
+  border-radius: var(--radius-container) !important;
+  background: var(--bg-panel) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+.gateway-route-page .route-pool-card--standalone .ant-card-head {
+  min-height: var(--rhythm-5);
+  padding: 0 var(--rhythm-3);
+  border-bottom-color: var(--border-muted);
+  background: var(--bg-panel);
+}
+
+.gateway-route-page .route-pool-card--standalone .ant-card-head-title {
+  padding: var(--rhythm-2) 0;
+  color: var(--text-main);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.gateway-route-page .route-pool-card--standalone .ant-card-extra {
+  padding: var(--rhythm-2) 0;
+}
+
+.gateway-route-page .route-pool-card .ant-card-body {
+  border-radius: 0;
+  overflow: hidden;
+}
+
+.gateway-route-page .route-pool-filters {
+  padding: var(--table-filter-gutter);
+  border-bottom-color: var(--border-muted);
+  background: var(--bg-panel);
+}
+
+.gateway-route-page .route-pool-filter .ant-select-selector,
+.gateway-route-page .route-pool-filter .ant-input {
+  border-radius: var(--radius-control) !important;
+  border-color: var(--border-soft) !important;
+  background: var(--bg-panel) !important;
+}
+
+.gateway-route-page .route-pool-clear.ant-btn {
+  border-radius: var(--radius-control);
+}
+
+.gateway-route-page .route-pool-card .card-shell {
+  background: transparent;
+}
+
+.gateway-route-page .table-fill--management {
+  background: transparent;
+}
+
+.gateway-route-page .table-fill--management .ant-table-thead > tr > th {
+  height: 38px;
+  padding: 0 var(--rhythm-2) !important;
+  background: var(--bg-muted) !important;
+  color: var(--text-muted) !important;
+  font-size: 13px;
+}
+
+.gateway-route-page .table-fill--management .ant-table-tbody > tr > td {
+  padding: 9px 14px !important;
+  font-size: 13px;
+  color: #2e4381;
+  border-bottom: 1px solid rgba(104, 141, 241, 0.08);
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.gateway-route-page .table-fill--management .ant-table-tbody > tr:hover > td {
+  background: var(--bg-subtle) !important;
+}
+
+.gateway-route-page .route-pool-preview__row,
+.gateway-route-page .gateway-active-feed__item {
+  border-bottom-color: rgba(148, 163, 184, 0.16);
+}
+
+.gateway-route-page .gateway-actions-cell {
+  flex-wrap: nowrap;
+}
+
+.gateway-route-page .gateway-actions-menu-button {
+  width: 28px;
+  padding-inline: 0;
+}

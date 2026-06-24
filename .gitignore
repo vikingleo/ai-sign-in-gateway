@@ -148,6 +148,7 @@ cmd/ai-sign-in-gateway/embedded_dist/
 cmd/ai-sign-in-gateway/*.syso
 /ai-sign-in-gateway
 .run/
+.tmp-regression/
 .release/
 .deploy.config
 site_screenshots/

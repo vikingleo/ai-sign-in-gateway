@@ -1,0 +1,63 @@
+@media (max-width: 720px) {
+  .sites-page.sites-page .sites-toolbar,
+  .sites-page.sites-page .sites-list-toolbar,
+  .gateway-route-page.gateway-route-page .route-pool-filters,
+  .gateway-route-page.gateway-route-page .route-pool-searchbar {
+    align-items: stretch !important;
+  }
+
+  .sites-page.sites-page .sites-toolbar,
+  .gateway-route-page.gateway-route-page .page-toolbar {
+    gap: 10px !important;
+  }
+
+  .sites-page.sites-page .sites-toolbar {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .sites-page.sites-page .sites-toolbar__segment,
+  .sites-page.sites-page .sites-toolbar__actions,
+  .gateway-route-page.gateway-route-page .gateway-toolbar-actions.ant-space {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    width: 100% !important;
+    overflow-x: visible !important;
+    padding-bottom: 2px !important;
+    scrollbar-width: none !important;
+  }
+
+  .sites-page.sites-page .sites-toolbar__actions {
+    justify-content: flex-start !important;
+  }
+
+  .sites-page.sites-page .sites-toolbar__segment::-webkit-scrollbar,
+  .sites-page.sites-page .sites-toolbar__actions::-webkit-scrollbar,
+  .gateway-route-page.gateway-route-page .gateway-toolbar-actions.ant-space::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .sites-page.sites-page .sites-toolbar__segment .ant-btn,
+  .sites-page.sites-page .sites-toolbar__actions .ant-btn,
+  .gateway-route-page.gateway-route-page .gateway-toolbar-actions.ant-space .ant-btn,
+  .gateway-route-page.gateway-route-page .route-pool-type-tabs .ant-btn,
+  .gateway-route-page.gateway-route-page .gateway-toolbar-actions.ant-space .route-probe-control {
+    flex: 1 1 132px !important;
+    width: auto !important;
+    min-width: 0 !important;
+  }
+
+  .gateway-route-page.gateway-route-page .route-pool-type-tabs .ant-btn {
+    flex: none !important;
+    width: 100% !important;
+  }
+
+  .sites-page.sites-page .sites-toolbar__actions > span {
+    flex: 1 1 132px !important;
+    min-width: 0 !important;
+  }
+
+  .sites-page.sites-page .sites-list-toolbar__search {
+    width: 100% !important;
+  }
+}

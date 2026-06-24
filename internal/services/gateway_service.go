@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -131,8 +132,8 @@ func ListGatewayActiveRequestsWithRecent(includeRecent bool) []GatewayActiveRequ
 		out = append(out, takeGatewayRecentActiveRequests(now)...)
 	}
 	for idx := range out {
-		out[idx].ElapsedMS = now.Sub(out[idx].StartedAt).Milliseconds()
 		if out[idx].FinishedAt == nil {
+			out[idx].ElapsedMS = now.Sub(out[idx].StartedAt).Milliseconds()
 			out[idx].ActiveConcurrency = RouteActiveCount(out[idx].RouteID)
 		}
 	}
@@ -288,8 +289,46 @@ func finishGatewayActiveRequestWithResult(token string, result GatewayProxyResul
 		item.FailureReason = stringPtr(gatewayRedactText(reason))
 	}
 	gatewayRecentActiveRequests.Lock()
+	pruneGatewayRecentActiveRequestItems(gatewayRecentActiveRequests.items, now)
 	gatewayRecentActiveRequests.items[token] = item
+	trimGatewayRecentActiveRequestItems(gatewayRecentActiveRequests.items)
 	gatewayRecentActiveRequests.Unlock()
+}
+
+func pruneGatewayRecentActiveRequestItems(items map[string]GatewayActiveRequest, now time.Time) {
+	for token, item := range items {
+		if item.FinishedAt == nil || now.Sub(*item.FinishedAt) > gatewayRecentActivityTTL {
+			delete(items, token)
+		}
+	}
+}
+
+func trimGatewayRecentActiveRequestItems(items map[string]GatewayActiveRequest) {
+	extra := len(items) - gatewayRecentActivityMaxItems
+	if extra <= 0 {
+		return
+	}
+	type orderedRecentRequest struct {
+		token string
+		item  GatewayActiveRequest
+	}
+	ordered := make([]orderedRecentRequest, 0, len(items))
+	for token, item := range items {
+		ordered = append(ordered, orderedRecentRequest{token: token, item: item})
+	}
+	slices.SortFunc(ordered, func(a, b orderedRecentRequest) int {
+		return gatewayFinishedAtForTrim(a.item).Compare(gatewayFinishedAtForTrim(b.item))
+	})
+	for idx := 0; idx < extra && idx < len(ordered); idx++ {
+		delete(items, ordered[idx].token)
+	}
+}
+
+func gatewayFinishedAtForTrim(item GatewayActiveRequest) time.Time {
+	if item.FinishedAt == nil {
+		return time.Time{}
+	}
+	return *item.FinishedAt
 }
 
 // ResetGatewayCountersForTest clears in-memory gateway counters/offsets.
@@ -320,6 +359,7 @@ const (
 	gatewayConcurrencyCooldownSeconds = 60
 	gatewayQuotaCooldownSeconds       = 24 * 60 * 60
 	gatewayRecentActivityTTL          = 3 * time.Second
+	gatewayRecentActivityMaxItems     = 200
 	gatewayRedactedValue              = "[redacted]"
 
 	maxGatewayRequestBodyBytes  int64 = 128 << 20
@@ -327,8 +367,8 @@ const (
 )
 
 var (
-	gatewaySensitiveTextPattern      = regexp.MustCompile(`(?i)\b(authorization|cookie|password|secret|token|key|api[_-]?key|access[_-]?token|refresh[_-]?token|auth[_-]?token|client[_-]?secret|session|session[_-]?id|session[_-]?token|jwt|bearer|csrf|csrf[_-]?token|xsrf|xsrf[_-]?token|private[_-]?key)\b(\s*[:=]\s*)("[^"]*"|'[^']*'|[^,;\r\n}]+)`)
-	gatewaySensitiveQuotedKeyPattern = regexp.MustCompile(`(?i)(["'])(authorization|cookie|password|secret|token|key|api[_-]?key|access[_-]?token|refresh[_-]?token|auth[_-]?token|client[_-]?secret|session|session[_-]?id|session[_-]?token|jwt|bearer|csrf|csrf[_-]?token|xsrf|xsrf[_-]?token|private[_-]?key)(["'])(\s*[:=]\s*)("[^"]*"|'[^']*'|[^,;\r\n}]+)`)
+	gatewaySensitiveTextPattern      = regexp.MustCompile(`(?i)\b(authorization|cookie|password|secret|token|key|api[_-]?key|access[_-]?token|refresh[_-]?token|auth[_-]?token|client[_-]?secret|session|session[_-]?id|session[_-]?token|jwt|bearer|csrf|csrf[_-]?token|xsrf|xsrf[_-]?token|private[_-]?key)\b(\s*[:=]\s*)("[^"]*"|'[^']*'|[^\r\n}]+)`)
+	gatewaySensitiveQuotedKeyPattern = regexp.MustCompile(`(?i)(["'])(authorization|cookie|password|secret|token|key|api[_-]?key|access[_-]?token|refresh[_-]?token|auth[_-]?token|client[_-]?secret|session|session[_-]?id|session[_-]?token|jwt|bearer|csrf|csrf[_-]?token|xsrf|xsrf[_-]?token|private[_-]?key)(["'])(\s*[:=]\s*)("[^"]*"|'[^']*'|[^\r\n}]+)`)
 )
 
 type gatewayUpstreamFailureKind string
@@ -388,6 +428,12 @@ type GatewayRouteGroupInput struct {
 	APIKey string
 }
 
+type GatewayRouteGroupUpdateInput struct {
+	Name      string
+	APIKey    string
+	APIKeySet bool
+}
+
 type DeleteGatewayRouteResult struct {
 	RouteID       uint
 	SiteID        uint
@@ -415,6 +461,7 @@ type GatewayProxyResult struct {
 	TotalTokens       *int
 	UsageCost         *float64
 	ActualModel       string
+	FailureRecorded   bool
 }
 
 type GatewayAllRoutesFailedError struct {
@@ -918,7 +965,7 @@ func CreateGatewayRouteGroup(db *gorm.DB, input GatewayRouteGroupInput) (models.
 	return group, nil
 }
 
-func UpdateGatewayRouteGroup(db *gorm.DB, groupID uint, input GatewayRouteGroupInput) (models.GatewayRouteGroup, error) {
+func UpdateGatewayRouteGroup(db *gorm.DB, groupID uint, input GatewayRouteGroupUpdateInput) (models.GatewayRouteGroup, error) {
 	if groupID == 0 {
 		return models.GatewayRouteGroup{}, errors.New("分组 ID 无效")
 	}
@@ -926,15 +973,19 @@ func UpdateGatewayRouteGroup(db *gorm.DB, groupID uint, input GatewayRouteGroupI
 	if name == "" {
 		return models.GatewayRouteGroup{}, errors.New("分组名称不能为空")
 	}
-	if err := ensureGatewayRouteGroupAPIKeyUnique(db, groupID, input.APIKey); err != nil {
-		return models.GatewayRouteGroup{}, err
+	if input.APIKeySet {
+		if err := ensureGatewayRouteGroupAPIKeyUnique(db, groupID, input.APIKey); err != nil {
+			return models.GatewayRouteGroup{}, err
+		}
 	}
 	var group models.GatewayRouteGroup
 	if err := db.First(&group, groupID).Error; err != nil {
 		return models.GatewayRouteGroup{}, err
 	}
 	group.Name = name
-	group.APIKey = strings.TrimSpace(input.APIKey)
+	if input.APIKeySet {
+		group.APIKey = strings.TrimSpace(input.APIKey)
+	}
 	if err := db.Save(&group).Error; err != nil {
 		return models.GatewayRouteGroup{}, err
 	}
@@ -1209,7 +1260,11 @@ func DeleteGatewayRoute(db *gorm.DB, routeID uint) (DeleteGatewayRouteResult, er
 		}
 		result.SiteID = state.SiteID
 		site := state.Site
-		if site.ID != 0 && removeSiteAPIKeyForGatewayRoute(&site, state.KeyFingerprint) {
+		apiKeyInUse, err := gatewayRouteAPIKeyValueInUse(tx, site, state)
+		if err != nil {
+			return err
+		}
+		if site.ID != 0 && !apiKeyInUse && removeSiteAPIKeyForGatewayRoute(&site, state.KeyFingerprint) {
 			if err := tx.Model(&models.Site{}).Where("id = ?", site.ID).Update("credentials", site.Credentials).Error; err != nil {
 				return err
 			}
@@ -1229,6 +1284,24 @@ func DeleteGatewayRoute(db *gorm.DB, routeID uint) (DeleteGatewayRouteResult, er
 		return DeleteGatewayRouteResult{}, err
 	}
 	return result, nil
+}
+
+func gatewayRouteAPIKeyValueInUse(db *gorm.DB, site models.Site, deletingState models.GatewayRouteState) (bool, error) {
+	key, ok := siteKeyForFingerprint(site, deletingState.KeyFingerprint)
+	if !ok || strings.TrimSpace(key.Value) == "" {
+		return false, nil
+	}
+	var states []models.GatewayRouteState
+	if err := db.Where("site_id = ? AND id <> ?", deletingState.SiteID, deletingState.ID).Find(&states).Error; err != nil {
+		return false, err
+	}
+	for _, state := range states {
+		otherKey, ok := siteKeyForFingerprint(site, state.KeyFingerprint)
+		if ok && otherKey.Value == key.Value {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // ----------------------------- candidate ordering -----------------------------
@@ -1309,10 +1382,10 @@ func filterAndOrderCandidates(routes []GatewayRoute, group, routeType string, po
 	}
 
 	if len(overflowClosed) > 0 {
-		ordered = append(ordered, sortConcurrencyOverflow(overflowClosed)...)
+		ordered = append(ordered, sortConcurrencyOverflow(overflowClosed, policy)...)
 	}
 	if len(overflowHalf) > 0 {
-		ordered = append(ordered, sortByLoadAndPriority(overflowHalf)...)
+		ordered = append(ordered, sortConcurrencyOverflow(overflowHalf, policy)...)
 	}
 	return ordered
 }
@@ -1434,8 +1507,11 @@ func preferActiveWithinLimit(in []GatewayRoute, policy GatewayPolicy) []GatewayR
 	return out
 }
 
-func sortConcurrencyOverflow(in []GatewayRoute) []GatewayRoute {
-	return sortByStrictPriority(in)
+func sortConcurrencyOverflow(in []GatewayRoute, policy GatewayPolicy) []GatewayRoute {
+	if strings.ToLower(strings.TrimSpace(policy.ConcurrencyOverflowStrategy)) == "sequential" {
+		return sortByStrictPriority(in)
+	}
+	return sortByLatency(in)
 }
 
 func candidateHealthRank(r GatewayRoute) int {
@@ -1637,6 +1713,7 @@ func ProxyGatewayRequestWithOptions(ctx context.Context, db *gorm.DB, r *http.Re
 	var lastResult GatewayProxyResult
 	var lastErr error
 	attemptCount := 0
+	countedFailureRouteIDs := map[uint]bool{}
 	for _, route := range ordered {
 		if policy.MaxAttempts > 0 && attemptCount >= policy.MaxAttempts {
 			lastMessage := strings.TrimSpace(lastResult.Error)
@@ -1654,7 +1731,11 @@ func ProxyGatewayRequestWithOptions(ctx context.Context, db *gorm.DB, r *http.Re
 		for _, baseURL := range gatewayRouteBasesInOrder(route) {
 			candidateRoute := route
 			candidateRoute.RequestBaseURL = baseURL
-			result, shouldFallback, err := proxyGatewayAttempt(ctx, db, r, body, candidateRoute, targetPath, opts, policy, streaming, attempt, requestedModel)
+			countFailure := !countedFailureRouteIDs[candidateRoute.State.ID]
+			result, shouldFallback, err := proxyGatewayAttempt(ctx, db, r, body, candidateRoute, targetPath, opts, policy, streaming, attempt, requestedModel, countFailure)
+			if result.FailureRecorded && candidateRoute.State.ID != 0 {
+				countedFailureRouteIDs[candidateRoute.State.ID] = true
+			}
 			result.Attempts = attempt
 			result.IsStream = streaming
 			LogGatewayRequest(db, candidateRoute, firstNonEmpty(result.TargetPath, targetPath), result.RequestURL, result.UserAgent, r.Method, requestedModel, firstNonEmpty(result.ActualModel, requestedModel), statusCodePtrOrNil(result.StatusCode), result.Success, result.LatencyMS, result.Error, policy.RouteStrategy, attempt, streaming, opts.RequestID, GatewayUsage{
@@ -1693,7 +1774,7 @@ func ProxyGatewayRequestWithOptions(ctx context.Context, db *gorm.DB, r *http.Re
 	return lastResult, GatewayAllRoutesFailedError{Attempts: attemptCount, Last: lastMessage}
 }
 
-func proxyGatewayAttempt(ctx context.Context, db *gorm.DB, r *http.Request, body []byte, route GatewayRoute, targetPath string, opts ProxyGatewayOptions, policy GatewayPolicy, streaming bool, attempt int, requestedModel string) (GatewayProxyResult, bool, error) {
+func proxyGatewayAttempt(ctx context.Context, db *gorm.DB, r *http.Request, body []byte, route GatewayRoute, targetPath string, opts ProxyGatewayOptions, policy GatewayPolicy, streaming bool, attempt int, requestedModel string, countFailure bool) (GatewayProxyResult, bool, error) {
 	upstreamTargetPath := gatewayUpstreamTargetPath(route, targetPath)
 	upstreamURL, err := targetURL(route.RequestBaseURL, upstreamTargetPath, r.URL.RawQuery, route.State.RouteType, route.State.RoutePath)
 	if err != nil {
@@ -1743,8 +1824,9 @@ func proxyGatewayAttempt(ctx context.Context, db *gorm.DB, r *http.Request, body
 	resp, err := client.Do(req)
 	latency := float64(time.Since(start).Microseconds()) / 1000.0
 	if err != nil {
-		UpdateRouteFailure(db, &route.State, err.Error(), latency, nil, policy)
+		recordGatewayAttemptFailure(db, &route.State, err.Error(), latency, nil, policy, countFailure)
 		activeResult = GatewayProxyResult{Route: route, TargetPath: upstreamTargetPath, RequestURL: upstreamURL, UserAgent: upstreamUserAgent, LatencyMS: latency, Success: false, Error: err.Error(), ActualModel: requestedModel}
+		activeResult.FailureRecorded = countFailure
 		return activeResult, true, nil
 	}
 
@@ -1762,8 +1844,9 @@ func proxyGatewayAttempt(ctx context.Context, db *gorm.DB, r *http.Request, body
 			}
 			end := time.Now()
 			actualLatency := float64(end.Sub(start).Microseconds()) / 1000.0
-			UpdateRouteFailure(db, &route.State, reason, actualLatency, &statusCode, policy)
+			recordGatewayAttemptFailure(db, &route.State, reason, actualLatency, &statusCode, policy, countFailure)
 			activeResult = GatewayProxyResult{Route: route, StatusCode: statusCode, Header: resp.Header.Clone(), TargetPath: upstreamTargetPath, RequestURL: upstreamURL, UserAgent: upstreamUserAgent, LatencyMS: actualLatency, Success: false, Error: reason, ActualModel: requestedModel}
+			activeResult.FailureRecorded = countFailure
 			return activeResult, true, nil
 		}
 		if opts.BeforeWrite != nil {
@@ -1775,9 +1858,10 @@ func proxyGatewayAttempt(ctx context.Context, db *gorm.DB, r *http.Request, body
 		end := time.Now()
 		actualLatency := float64(end.Sub(start).Microseconds()) / 1000.0
 		if copyErr != nil && written == 0 {
-			// nothing flushed yet — count as failure, allow retry
-			UpdateRouteFailure(db, &route.State, copyErr.Error(), actualLatency, &statusCode, policy)
+			// Nothing flushed yet; count as failure and allow retry.
+			recordGatewayAttemptFailure(db, &route.State, copyErr.Error(), actualLatency, &statusCode, policy, countFailure)
 			activeResult = GatewayProxyResult{Route: route, StatusCode: statusCode, Header: resp.Header.Clone(), TargetPath: upstreamTargetPath, RequestURL: upstreamURL, UserAgent: upstreamUserAgent, LatencyMS: actualLatency, Success: false, Error: copyErr.Error(), ActualModel: requestedModel}
+			activeResult.FailureRecorded = countFailure
 			return activeResult, true, nil
 		}
 		// once data is on the wire, treat as success even if upstream cuts off mid-stream
@@ -1808,8 +1892,9 @@ func proxyGatewayAttempt(ctx context.Context, db *gorm.DB, r *http.Request, body
 	_ = resp.Body.Close()
 	if readErr != nil {
 		reason := readErr.Error()
-		UpdateRouteFailure(db, &route.State, reason, latency, &statusCode, policy)
+		recordGatewayAttemptFailure(db, &route.State, reason, latency, &statusCode, policy, countFailure)
 		activeResult = GatewayProxyResult{Route: route, StatusCode: statusCode, Header: resp.Header.Clone(), TargetPath: upstreamTargetPath, RequestURL: upstreamURL, UserAgent: upstreamUserAgent, LatencyMS: latency, Success: false, Error: reason, ActualModel: requestedModel}
+		activeResult.FailureRecorded = countFailure
 		return activeResult, true, nil
 	}
 
@@ -1822,7 +1907,7 @@ func proxyGatewayAttempt(ctx context.Context, db *gorm.DB, r *http.Request, body
 			gatewayResponseBodyHasStructuredPayload(rawRespBody) &&
 			!gatewayResponseBodyHasVisiblePayload(respBody) {
 			reason := "upstream response has no visible payload"
-			UpdateRouteFailure(db, &route.State, reason, latency, &statusCode, policy)
+			recordGatewayAttemptFailure(db, &route.State, reason, latency, &statusCode, policy, countFailure)
 			activeResult = GatewayProxyResult{
 				Route:             route,
 				StatusCode:        statusCode,
@@ -1842,6 +1927,7 @@ func proxyGatewayAttempt(ctx context.Context, db *gorm.DB, r *http.Request, body
 				TotalTokens:       usage.TotalTokens,
 				UsageCost:         usage.UsageCost,
 				ActualModel:       actualModel,
+				FailureRecorded:   countFailure,
 			}
 			return activeResult, true, nil
 		}
@@ -1880,9 +1966,18 @@ func proxyGatewayAttempt(ctx context.Context, db *gorm.DB, r *http.Request, body
 	if reason == "" {
 		reason = fmt.Sprintf("status=%d", statusCode)
 	}
-	UpdateRouteFailure(db, &route.State, reason, latency, &statusCode, policy)
+	recordGatewayAttemptFailure(db, &route.State, reason, latency, &statusCode, policy, countFailure)
 	activeResult = GatewayProxyResult{Route: route, StatusCode: statusCode, Header: resp.Header.Clone(), Body: respBody, TargetPath: upstreamTargetPath, RequestURL: upstreamURL, UserAgent: upstreamUserAgent, LatencyMS: latency, Success: false, Error: reason, ActualModel: firstNonEmpty(ExtractGatewayModelFromResponseBody(respBody), requestedModel)}
+	activeResult.FailureRecorded = countFailure
 	return activeResult, shouldFallbackGatewayFailure(statusCode, reason, policy.FailureRetryMode), nil
+}
+
+func recordGatewayAttemptFailure(db *gorm.DB, state *models.GatewayRouteState, message string, latency float64, statusCode *int, policy GatewayPolicy, countFailure bool) {
+	if countFailure {
+		UpdateRouteFailure(db, state, message, latency, statusCode, policy)
+		return
+	}
+	UpdateRouteFailureObservation(db, state, message, latency, statusCode)
 }
 
 func gatewayUpstreamTargetPath(route GatewayRoute, targetPath string) string {
@@ -2635,6 +2730,35 @@ func UpdateRouteFailure(db *gorm.DB, state *models.GatewayRouteState, message st
 	_ = db.Save(state).Error
 }
 
+func UpdateRouteFailureObservation(db *gorm.DB, state *models.GatewayRouteState, message string, latency float64, statusCode *int) {
+	now := time.Now().UTC()
+	reason := shorten(message, 500)
+	updates := map[string]any{
+		"last_status_code": statusCode,
+		"last_latency_ms":  latency,
+		"last_error":       reason,
+		"last_used_at":     now,
+		"last_failure_at":  now,
+	}
+	if err := db.Model(&models.GatewayRouteState{}).Where("id = ?", state.ID).Updates(updates).Error; err != nil {
+		applyRouteFailureObservationState(state, reason, latency, statusCode, now)
+		return
+	}
+	if err := db.First(state, state.ID).Error; err != nil {
+		applyRouteFailureObservationState(state, reason, latency, statusCode, now)
+		return
+	}
+}
+
+func applyRouteFailureObservationState(state *models.GatewayRouteState, reason string, latency float64, statusCode *int, now time.Time) {
+	state.LastStatusCode = statusCode
+	l := latency
+	state.LastLatencyMS = &l
+	state.LastError = &reason
+	state.LastUsedAt = &now
+	state.LastFailureAt = &now
+}
+
 func shouldOpenRouteCircuitImmediately(kind gatewayUpstreamFailureKind) bool {
 	return kind == gatewayUpstreamRateLimited ||
 		kind == gatewayUpstreamConcurrencyLimited ||
@@ -3059,8 +3183,8 @@ func RedactGatewayURL(rawURL string) string {
 		return rawURL
 	}
 	values := parsed.Query()
-	for _, key := range []string{"api_key", "apikey", "key", "token", "access_token", "refresh_token", "password", "secret"} {
-		if values.Has(key) {
+	for key := range values {
+		if gatewaySensitiveJSONKey(key) {
 			values.Set(key, "[redacted]")
 		}
 	}

@@ -1,0 +1,243 @@
+.chat-workbench.chat-workbench, .desktop-console.desktop-console,
+.login-screen.login-screen {
+  color: var(--text-main) !important;
+  background: var(--bg-page) !important;
+}
+.chat-workbench.chat-workbench .session-main,
+.desktop-console.desktop-console .desktop-main,
+.login-screen.login-screen .login-page {
+  background: var(--bg-page) !important;
+}
+.chat-workbench.chat-workbench .session-sidebar,
+.chat-workbench.chat-workbench .session-empty,
+.chat-workbench.chat-workbench .session-composer__frame,
+.chat-workbench.chat-workbench .session-message__bubble,
+.chat-workbench.chat-workbench .session-attachment,
+.settings-page.settings-page .settings-tab-card.ant-card,
+.desktop-console.desktop-console .desktop-topbar,
+.desktop-console.desktop-console .summary-tile,
+.desktop-console.desktop-console .service-strip,
+.desktop-console.desktop-console .desktop-alerts,
+.desktop-console.desktop-console .desktop-settings-section,
+.login-screen.login-screen .login-card,
+.login-screen.login-screen .capability-item,
+.login-screen.login-screen .invite-entry,
+.login-screen.login-screen .invite-item {
+  border: 1px solid var(--border-soft) !important;
+  border-radius: var(--radius-container) !important;
+  background: var(--bg-panel) !important;
+  box-shadow: var(--shadow-card) !important;
+  backdrop-filter: none !important;
+}
+.login-screen.login-screen .metric-panel, .desktop-console.desktop-console .summary-tile::after {
+  display: none !important;
+  content: none !important;
+}
+.chat-workbench.chat-workbench .session-sidebar {
+  border-top: 0 !important;
+  border-right: 0 !important;
+  border-bottom: 0 !important;
+  border-radius: 0 !important;
+}
+.chat-workbench.chat-workbench .session-main {
+  background-image: none !important;
+}
+.chat-workbench.chat-workbench .session-history {
+  padding: 28px 24px 20px !important;
+}
+.chat-workbench.chat-workbench .session-empty {
+  width: min(560px, 100%) !important;
+  min-height: auto !important;
+  margin: auto !important;
+  padding: 24px !important;
+  text-align: left !important;
+}
+.chat-workbench.chat-workbench .session-empty__copy h1,
+.login-screen.login-screen .login-copy h1,
+.desktop-console.desktop-console .summary-tile strong,
+.settings-page.settings-page .ant-card-head-title,
+.settings-page.settings-page .ant-tabs-tab-btn {
+  color: var(--text-main) !important;
+  letter-spacing: 0 !important;
+  text-shadow: none !important;
+}
+.chat-workbench.chat-workbench .session-empty__copy h1,
+.login-screen.login-screen .login-copy h1 {
+  font-size: 32px !important;
+  line-height: 1.16 !important;
+}
+
+.chat-workbench.chat-workbench .session-empty__copy h1 {
+  font-size: 24px !important;
+  line-height: 1.24 !important;
+}
+
+.chat-workbench.chat-workbench .session-empty__copy p {
+  font-size: 15px !important;
+  line-height: 1.55 !important;
+}
+.chat-workbench.chat-workbench .session-empty__copy p,
+.chat-workbench.chat-workbench .session-sidebar__header span,
+.chat-workbench.chat-workbench .session-history-item__preview,
+.chat-workbench.chat-workbench .session-history-item__meta,
+.chat-workbench.chat-workbench .session-footnote,
+.desktop-console.desktop-console .desktop-brand span,
+.desktop-console.desktop-console .section-heading span,
+.desktop-console.desktop-console .service-line p,
+.login-screen.login-screen .login-copy p,
+.login-screen.login-screen .capability-item p,
+.login-screen.login-screen .login-card__head p,
+.login-screen.login-screen .invite-entry small,
+.login-screen.login-screen .login-footer,
+.settings-page.settings-page .field-help,
+.settings-page.settings-page .account-hint {
+  color: var(--text-muted) !important;
+}
+.chat-workbench.chat-workbench .session-message__bubble {
+  max-width: min(720px, 82%) !important;
+  border-color: var(--border-soft) !important;
+  color: var(--text-main) !important;
+}
+.chat-workbench.chat-workbench .session-message--user .session-message__bubble {
+  background: var(--accent-soft) !important;
+}
+.chat-workbench.chat-workbench .session-message__thought {
+  color: var(--text-muted) !important;
+  font-size: 13px !important;
+}
+.chat-workbench.chat-workbench .session-composer {
+  width: 100% !important;
+  min-width: 0 !important;
+  padding: 0 24px 20px !important;
+}
+.chat-workbench.chat-workbench .session-history,
+.chat-workbench.chat-workbench .session-composer__controls,
+.chat-workbench.chat-workbench .session-composer__alert,
+.chat-workbench.chat-workbench .session-composer__frame,
+.chat-workbench.chat-workbench .session-attachments {
+  width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+.chat-workbench.chat-workbench .session-composer__frame {
+  border-color: var(--border-soft) !important;
+  background: var(--bg-panel) !important;
+}
+.chat-workbench.chat-workbench .session-tool-button,
+.chat-workbench.chat-workbench .session-clear-button,
+.chat-workbench.chat-workbench .session-sidebar__actions button,
+.chat-workbench.chat-workbench .session-history-delete,
+.chat-workbench.chat-workbench .image-ratio-preset,
+.desktop-console.desktop-console .service-line__copy,
+.login-screen.login-screen .invite-entry > .anticon {
+  border: 1px solid var(--border-soft) !important;
+  border-radius: var(--radius-control) !important;
+  background: var(--bg-panel) !important;
+  color: var(--text-main) !important;
+  box-shadow: none !important;
+}
+.chat-workbench.chat-workbench .session-send-button,
+.login-screen.login-screen .login-submit.ant-btn,
+.desktop-console.desktop-console .ant-btn-primary {
+  border-color: var(--accent) !important;
+  border-radius: var(--radius-control) !important;
+  background: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+  box-shadow: none !important;
+}
+.chat-workbench.chat-workbench .session-attachment button {
+  width: var(--control-height) !important;
+  height: var(--control-height) !important;
+  border-radius: var(--radius-control) !important;
+}
+.chat-workbench.chat-workbench .session-generated-grid img,
+.chat-workbench.chat-workbench .session-reference-card img,
+.chat-workbench.chat-workbench .session-attachment img {
+  border-radius: var(--radius-control) !important;
+}
+.chat-workbench.chat-workbench .ant-select-selector,
+.chat-workbench.chat-workbench .ant-input-number,
+.chat-workbench.chat-workbench .ant-input-number-group-addon,
+.settings-page.settings-page .ant-input,
+.settings-page.settings-page .ant-input-affix-wrapper,
+.settings-page.settings-page .ant-input-number,
+.settings-page.settings-page .ant-select-selector,
+.login-screen.login-screen .ant-input-affix-wrapper {
+  border-color: var(--border-soft) !important;
+  border-radius: var(--radius-control) !important;
+  background: var(--bg-panel) !important;
+  box-shadow: none !important;
+}
+.settings-page.settings-page .settings-tabs .ant-tabs-nav {
+  margin: 0 !important;
+  padding: 0 20px !important;
+  border-bottom: 1px solid var(--border-muted) !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+.settings-page.settings-page .card-scroll--padded {
+  padding: 16px !important;
+}
+.settings-page.settings-page .pricing-grid {
+  padding: 8px !important;
+  border: 1px solid var(--border-muted) !important;
+  border-radius: var(--radius-container) !important;
+  background: var(--bg-subtle) !important;
+}
+.settings-page.settings-page .pricing-grid--head {
+  border-color: transparent !important;
+  background: transparent !important;
+}
+.desktop-console.desktop-console .desktop-topbar {
+  min-height: 64px !important;
+  border-top: 0 !important;
+  border-right: 0 !important;
+  border-left: 0 !important;
+  border-radius: 0 !important;
+}
+.desktop-console.desktop-console .desktop-brand__mark,
+.login-screen.login-screen .brand-badge,
+.login-screen.login-screen .brand-badge--large,
+.login-screen.login-screen .capability-icon,
+.desktop-console.desktop-console .section-heading > .anticon,
+.desktop-console.desktop-console .summary-tile__icon {
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: var(--radius-control) !important;
+  clip-path: none !important;
+  background: var(--accent-soft) !important;
+  color: var(--accent) !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+.login-screen.login-screen .brand-badge--large {
+  width: 56px !important;
+  height: 56px !important;
+  font-size: 18px !important;
+  line-height: 1.2 !important;
+}
+.desktop-console.desktop-console .desktop-main {
+  width: min(1320px, 100%) !important;
+  padding: 24px !important;
+}
+.desktop-console.desktop-console .summary-tile {
+  min-height: 108px !important;
+}
+.desktop-console.desktop-console .summary-tile__icon {
+  position: static !important;
+  margin-bottom: 10px !important;
+  font-size: 22px !important;
+  opacity: 1 !important;
+}
+.desktop-console.desktop-console .section-heading {
+  padding-bottom: 12px !important;
+  border-bottom: 1px solid var(--border-muted) !important;
+}
+@media (max-width: 900px) {
+  .chat-workbench.chat-workbench {
+    grid-template-columns: 1fr !important;
+  }
+  .desktop-console.desktop-console .desktop-main {
+    padding: 16px !important;
+  }
+}

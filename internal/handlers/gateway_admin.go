@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"sort"
@@ -49,7 +51,11 @@ func (a *App) GatewayAdminRoutes(r chi.Router) {
 }
 
 func (a *App) GatewayOverview(w http.ResponseWriter, r *http.Request) {
-	settings, _ := a.systemSettings()
+	settings, err := a.effectiveSystemSettings()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 	var total, healthy, open, halfOpen, disabled int64
 	a.DB.Model(&models.GatewayRouteState{}).Count(&total)
 	a.DB.Model(&models.GatewayRouteState{}).Where("is_enabled = ? AND circuit_state = ?", true, "closed").Count(&healthy)
@@ -82,7 +88,7 @@ func (a *App) GatewayOverview(w http.ResponseWriter, r *http.Request) {
 		"avg_latency_ms_24h":            overviewStats.AvgLatency,
 		"usage_cost_24h":                costSummary,
 		"strategy_breakdown_24h":        strategyBreakdown24hStream(a.DB, since24h),
-		"route_strategy":                settings.GatewayRouteStrategy,
+		"route_strategy":                gatewayRouteStrategyOrDefault(settings.GatewayRouteStrategy),
 		"failure_threshold":             settings.GatewayFailureThreshold,
 		"cooldown_seconds":              settings.GatewayCooldownSeconds,
 		"request_timeout":               settings.GatewayRequestTimeout,
@@ -90,7 +96,7 @@ func (a *App) GatewayOverview(w http.ResponseWriter, r *http.Request) {
 		"failure_retry_mode":            services.NormalizeGatewayFailureRetryMode(settings.GatewayFailureRetryMode),
 		"route_concurrency_limit":       settings.GatewayRouteConcurrencyLimit,
 		"concurrency_transfer_strategy": normalizeGatewayConcurrencyTransferStrategy(settings.GatewayConcurrencyTransferStrategy),
-		"concurrency_overflow_strategy": settings.GatewayConcurrencyOverflowStrategy,
+		"concurrency_overflow_strategy": gatewayConcurrencyOverflowStrategyOrDefault(settings.GatewayConcurrencyOverflowStrategy),
 	})
 }
 
@@ -221,7 +227,11 @@ func (a *App) GatewayUsage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	settings, _ := a.systemSettings()
+	settings, err := a.effectiveSystemSettings()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 	pricing := services.ResolveGatewayPricingScheme(settings.GatewayPricingActiveSchemeID, settings.GatewayPricingSchemes)
 	out, err := a.gatewayUsageResponseStream(start, end, pricing)
 	if err != nil {
@@ -298,15 +308,18 @@ type gatewayModelCostAgg struct {
 	KnownPrice bool
 }
 
-func (a *App) gatewayUsageResponse(logs []models.GatewayRequestLog, start, end time.Time, pricing models.GatewayPricingScheme) map[string]any {
-	routeByID, routeBySiteKey := a.gatewayLogRouteLookup(logs)
+func (a *App) gatewayUsageResponse(logs []models.GatewayRequestLog, start, end time.Time, pricing models.GatewayPricingScheme) (map[string]any, error) {
+	routeByID, routeBySiteKey, err := a.gatewayLogRouteLookup(logs)
+	if err != nil {
+		return nil, err
+	}
 	siteByID := map[uint]models.Site{}
 	for _, log := range logs {
 		if log.Site != nil {
 			siteByID[log.Site.ID] = *log.Site
 		}
 	}
-	return gatewayUsageResponseFromLogs(logs, start, end, pricing, routeByID, routeBySiteKey, siteByID)
+	return gatewayUsageResponseFromLogs(logs, start, end, pricing, routeByID, routeBySiteKey, siteByID), nil
 }
 
 func (a *App) gatewayUsageResponseStream(start, end time.Time, pricing models.GatewayPricingScheme) (map[string]any, error) {
@@ -337,8 +350,14 @@ func (a *App) gatewayUsageResponseStream(start, end time.Time, pricing models.Ga
 		return nil, err
 	}
 
-	routeByID, routeBySiteKey := a.gatewayLogRouteLookupForIDs(routeIDSet, siteIDSet)
-	siteByID := a.gatewaySiteLookupForIDs(siteIDSet)
+	routeByID, routeBySiteKey, err := a.gatewayLogRouteLookupForIDs(routeIDSet, siteIDSet)
+	if err != nil {
+		return nil, err
+	}
+	siteByID, err := a.gatewaySiteLookupForIDs(siteIDSet)
+	if err != nil {
+		return nil, err
+	}
 
 	rows, err := a.DB.Model(&models.GatewayRequestLog{}).
 		Select("id", "request_id", "route_state_id", "site_id", "key_fingerprint", "key_name", "group_name", "model", "requested_model", "actual_model", "route_type", "success", "latency_ms", "prompt_tokens", "cached_input_tokens", "cache_read_tokens", "cache_write_tokens", "completion_tokens", "total_tokens", "usage_cost", "is_stream", "created_at").
@@ -905,62 +924,217 @@ func strategyBreakdown24hStream(db *gormDB, since time.Time) []map[string]any {
 }
 
 func (a *App) GetGatewaySettings(w http.ResponseWriter, r *http.Request) {
-	settings, _ := a.systemSettings()
-	writeJSON(w, http.StatusOK, gatewaySettings(settings))
-}
-
-func (a *App) UpdateGatewaySettings(w http.ResponseWriter, r *http.Request) {
-	var payload map[string]any
-	_ = httpx.Decode(r, &payload)
-	settings, err := a.systemSettings()
+	settings, err := a.effectiveSystemSettings()
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if value, ok := payload["route_strategy"].(string); ok {
+	writeJSON(w, http.StatusOK, gatewaySettings(settings))
+}
+
+func (a *App) UpdateGatewaySettings(w http.ResponseWriter, r *http.Request) {
+	var payload map[string]json.RawMessage
+	if err := httpx.Decode(r, &payload); err != nil {
+		writeError(w, http.StatusBadRequest, "请求格式错误")
+		return
+	}
+	settings, err := a.effectiveSystemSettings()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if value, ok, err := gatewaySettingsString(payload, "route_strategy"); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	} else if ok {
+		value = strings.ToLower(strings.TrimSpace(value))
+		if !isGatewayRouteStrategy(value) {
+			writeError(w, http.StatusBadRequest, "route_strategy 必须是 round_robin/latency_first/priority/smart")
+			return
+		}
 		settings.GatewayRouteStrategy = value
 	}
-	if value, ok := payload["concurrency_overflow_strategy"].(string); ok {
+	if value, ok, err := gatewaySettingsString(payload, "concurrency_overflow_strategy"); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	} else if ok {
+		value = strings.ToLower(strings.TrimSpace(value))
+		if !isGatewayConcurrencyOverflowStrategy(value) {
+			writeError(w, http.StatusBadRequest, "concurrency_overflow_strategy 必须是 latency_first/sequential")
+			return
+		}
 		settings.GatewayConcurrencyOverflowStrategy = value
 	}
-	if value, ok := payload["concurrency_transfer_strategy"].(string); ok {
-		settings.GatewayConcurrencyTransferStrategy = normalizeGatewayConcurrencyTransferStrategy(value)
+	if value, ok, err := gatewaySettingsString(payload, "concurrency_transfer_strategy"); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	} else if ok {
+		value = strings.ToLower(strings.TrimSpace(value))
+		if !isGatewayConcurrencyTransferStrategy(value) {
+			writeError(w, http.StatusBadRequest, "concurrency_transfer_strategy 必须是 limit_only/balance")
+			return
+		}
+		settings.GatewayConcurrencyTransferStrategy = value
 	}
-	if value, ok := payload["failure_retry_mode"].(string); ok {
-		settings.GatewayFailureRetryMode = services.NormalizeGatewayFailureRetryMode(value)
+	if value, ok, err := gatewaySettingsString(payload, "failure_retry_mode"); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	} else if ok {
+		value = strings.ToLower(strings.TrimSpace(value))
+		if !isGatewayFailureRetryMode(value) {
+			writeError(w, http.StatusBadRequest, "failure_retry_mode 必须是 retryable/all")
+			return
+		}
+		settings.GatewayFailureRetryMode = value
 	}
-	if value, ok := payload["gateway_api_key"].(string); ok {
+	if value, ok, err := gatewaySettingsString(payload, "gateway_api_key"); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	} else if ok {
 		settings.GatewayAPIKey = value
 	}
-	if value, ok := payload["failure_threshold"].(float64); ok {
+	if value, ok, err := gatewaySettingsIntInRange(payload, "failure_threshold", 1, 20); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	} else if ok {
 		settings.GatewayFailureThreshold = int(value)
 	}
-	if value, ok := payload["cooldown_seconds"].(float64); ok {
+	if value, ok, err := gatewaySettingsIntInRange(payload, "cooldown_seconds", 10, 3600); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	} else if ok {
 		settings.GatewayCooldownSeconds = int(value)
 	}
-	if value, ok := payload["request_timeout"].(float64); ok {
+	if value, ok, err := gatewaySettingsIntInRange(payload, "request_timeout", 5, 180); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	} else if ok {
 		settings.GatewayRequestTimeout = int(value)
 	}
-	if value, ok := payload["max_attempts"].(float64); ok {
+	if value, ok, err := gatewaySettingsIntInRange(payload, "max_attempts", 0, 50); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	} else if ok {
 		settings.GatewayMaxAttempts = int(value)
 	}
-	if value, ok := payload["route_concurrency_limit"].(float64); ok {
+	if value, ok, err := gatewaySettingsIntInRange(payload, "route_concurrency_limit", 0, 1000); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	} else if ok {
 		settings.GatewayRouteConcurrencyLimit = int(value)
 	}
-	if value, ok := payload["smart_latency_bias"].(float64); ok {
+	if value, ok, err := gatewaySettingsFloat(payload, "smart_latency_bias"); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	} else if ok {
 		settings.GatewaySmartLatencyBias = clampBiasFromAPI(value)
 	}
-	if value, ok := payload["smart_concurrency_bias"].(float64); ok {
+	if value, ok, err := gatewaySettingsFloat(payload, "smart_concurrency_bias"); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	} else if ok {
 		settings.GatewaySmartConcurrencyBias = clampBiasFromAPI(value)
 	}
-	if value, ok := payload["smart_failure_bias"].(float64); ok {
+	if value, ok, err := gatewaySettingsFloat(payload, "smart_failure_bias"); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	} else if ok {
 		settings.GatewaySmartFailureBias = clampBiasFromAPI(value)
 	}
-	if value, ok := payload["smart_priority_bias"].(float64); ok {
+	if value, ok, err := gatewaySettingsFloat(payload, "smart_priority_bias"); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	} else if ok {
 		settings.GatewaySmartPriorityBias = clampBiasFromAPI(value)
 	}
-	_ = a.DB.Save(&settings).Error
+	if err := a.DB.Save(&settings).Error; err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 	writeJSON(w, http.StatusOK, gatewaySettings(settings))
+}
+
+func gatewaySettingsString(payload map[string]json.RawMessage, key string) (string, bool, error) {
+	raw, ok := payload[key]
+	if !ok {
+		return "", false, nil
+	}
+	var value string
+	if err := json.Unmarshal(raw, &value); err != nil {
+		return "", true, errors.New(key + " 类型必须是字符串")
+	}
+	return value, true, nil
+}
+
+func gatewaySettingsInt(payload map[string]json.RawMessage, key string) (int, bool, error) {
+	raw, ok := payload[key]
+	if !ok {
+		return 0, false, nil
+	}
+	var value int
+	if err := json.Unmarshal(raw, &value); err != nil {
+		return 0, true, errors.New(key + " 类型必须是整数")
+	}
+	return value, true, nil
+}
+
+func gatewaySettingsIntInRange(payload map[string]json.RawMessage, key string, minValue int, maxValue int) (int, bool, error) {
+	value, ok, err := gatewaySettingsInt(payload, key)
+	if err != nil || !ok {
+		return value, ok, err
+	}
+	if value < minValue || value > maxValue {
+		return 0, true, fmt.Errorf("%s 必须在 %d 到 %d 之间", key, minValue, maxValue)
+	}
+	return value, true, nil
+}
+
+func gatewaySettingsFloat(payload map[string]json.RawMessage, key string) (float64, bool, error) {
+	raw, ok := payload[key]
+	if !ok {
+		return 0, false, nil
+	}
+	var value float64
+	if err := json.Unmarshal(raw, &value); err != nil {
+		return 0, true, errors.New(key + " 类型必须是数字")
+	}
+	return value, true, nil
+}
+
+func isGatewayRouteStrategy(value string) bool {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "round_robin", "latency_first", "priority", "smart":
+		return true
+	default:
+		return false
+	}
+}
+
+func isGatewayFailureRetryMode(value string) bool {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "retryable", "all":
+		return true
+	default:
+		return false
+	}
+}
+
+func isGatewayConcurrencyTransferStrategy(value string) bool {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "limit_only", "balance":
+		return true
+	default:
+		return false
+	}
+}
+
+func isGatewayConcurrencyOverflowStrategy(value string) bool {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "latency_first", "sequential":
+		return true
+	default:
+		return false
+	}
 }
 
 func clampBiasFromAPI(value float64) float64 {
@@ -975,7 +1149,7 @@ func clampBiasFromAPI(value float64) float64 {
 
 func gatewaySettings(settings models.SystemSetting) map[string]any {
 	return map[string]any{
-		"route_strategy":                settings.GatewayRouteStrategy,
+		"route_strategy":                gatewayRouteStrategyOrDefault(settings.GatewayRouteStrategy),
 		"failure_threshold":             settings.GatewayFailureThreshold,
 		"cooldown_seconds":              settings.GatewayCooldownSeconds,
 		"request_timeout":               settings.GatewayRequestTimeout,
@@ -983,13 +1157,29 @@ func gatewaySettings(settings models.SystemSetting) map[string]any {
 		"failure_retry_mode":            services.NormalizeGatewayFailureRetryMode(settings.GatewayFailureRetryMode),
 		"route_concurrency_limit":       settings.GatewayRouteConcurrencyLimit,
 		"concurrency_transfer_strategy": normalizeGatewayConcurrencyTransferStrategy(settings.GatewayConcurrencyTransferStrategy),
-		"concurrency_overflow_strategy": settings.GatewayConcurrencyOverflowStrategy,
+		"concurrency_overflow_strategy": gatewayConcurrencyOverflowStrategyOrDefault(settings.GatewayConcurrencyOverflowStrategy),
 		"smart_latency_bias":            settings.GatewaySmartLatencyBias,
 		"smart_concurrency_bias":        settings.GatewaySmartConcurrencyBias,
 		"smart_failure_bias":            settings.GatewaySmartFailureBias,
 		"smart_priority_bias":           settings.GatewaySmartPriorityBias,
 		"gateway_api_key":               settings.GatewayAPIKey,
 	}
+}
+
+func gatewayRouteStrategyOrDefault(value string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	if isGatewayRouteStrategy(value) {
+		return value
+	}
+	return "round_robin"
+}
+
+func gatewayConcurrencyOverflowStrategyOrDefault(value string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	if isGatewayConcurrencyOverflowStrategy(value) {
+		return value
+	}
+	return "latency_first"
 }
 
 func (a *App) SyncGatewayRoutes(w http.ResponseWriter, r *http.Request) {
@@ -1038,14 +1228,24 @@ func (a *App) UpdateGatewayRouteGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var payload struct {
-		Name   string `json:"name"`
-		APIKey string `json:"api_key"`
+		Name        string  `json:"name"`
+		APIKey      *string `json:"api_key"`
+		ClearAPIKey bool    `json:"clear_api_key"`
 	}
 	if err := httpx.Decode(r, &payload); err != nil {
 		writeError(w, http.StatusBadRequest, "请求格式错误")
 		return
 	}
-	group, err := services.UpdateGatewayRouteGroup(a.DB, uint(groupID), services.GatewayRouteGroupInput{Name: payload.Name, APIKey: payload.APIKey})
+	input := services.GatewayRouteGroupUpdateInput{Name: payload.Name}
+	if payload.APIKey != nil {
+		input.APIKey = strings.TrimSpace(*payload.APIKey)
+		input.APIKeySet = true
+	}
+	if payload.ClearAPIKey {
+		input.APIKey = ""
+		input.APIKeySet = true
+	}
+	group, err := services.UpdateGatewayRouteGroup(a.DB, uint(groupID), input)
 	if err != nil {
 		status := http.StatusBadRequest
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -1120,18 +1320,24 @@ func (a *App) DeleteGatewayRoute(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"status":           "ok",
-		"message":          "路由已删除，对应站点 API Key 已移除。",
+		"message":          deleteGatewayRouteMessage(result.RemovedAPIKey),
 		"deleted_route_id": result.RouteID,
 		"site_id":          result.SiteID,
 		"removed_api_key":  result.RemovedAPIKey,
 	})
 }
 
+func deleteGatewayRouteMessage(removedAPIKey bool) string {
+	if removedAPIKey {
+		return "路由已删除，对应站点 API Key 已移除。"
+	}
+	return "路由已删除，对应站点 API Key 已保留。"
+}
+
 func gatewayRouteGroupResponse(group models.GatewayRouteGroup, routeCount int) map[string]any {
 	return map[string]any{
 		"id":          group.ID,
 		"name":        group.Name,
-		"api_key":     group.APIKey,
 		"has_api_key": strings.TrimSpace(group.APIKey) != "",
 		"route_count": routeCount,
 		"created_at":  group.CreatedAt,
@@ -1214,7 +1420,12 @@ func (a *App) GatewayLogs(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	writeJSON(w, http.StatusOK, a.gatewayLogResponse(logs))
+	out, err := a.gatewayLogResponse(logs)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, out)
 }
 
 func (a *App) GatewayRouteLogs(w http.ResponseWriter, r *http.Request) {
@@ -1235,7 +1446,12 @@ func (a *App) GatewayRouteLogs(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	writeJSON(w, http.StatusOK, a.gatewayLogResponse(logs))
+	out, err := a.gatewayLogResponse(logs)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, out)
 }
 
 func gatewayLogStatusFilter(raw string) string {
@@ -1265,7 +1481,10 @@ func (a *App) gatewayActiveRequestResponse(items []services.GatewayActiveRequest
 	if err != nil {
 		return nil, err
 	}
-	routeByID, routeBySiteKey := a.gatewayLogRouteLookup(logs)
+	routeByID, routeBySiteKey, err := a.gatewayLogRouteLookup(logs)
+	if err != nil {
+		return nil, err
+	}
 	sequences := gatewayLogAttemptSequences(logs)
 	out := make([]map[string]any, 0, len(items))
 	for _, item := range items {
@@ -1281,7 +1500,7 @@ func (a *App) gatewayActiveRequestResponse(items []services.GatewayActiveRequest
 			"key_fingerprint":       item.KeyFingerprint,
 			"group_name":            item.GroupName,
 			"target_path":           item.TargetPath,
-			"request_url":           item.RequestURL,
+			"request_url":           services.RedactGatewayURL(item.RequestURL),
 			"method":                item.Method,
 			"route_strategy":        item.RouteStrategy,
 			"attempt_index":         item.AttemptIndex,
@@ -1493,12 +1712,15 @@ func mergeGatewayLogWithActiveRequest(log models.GatewayRequestLog, item service
 	return log
 }
 
-func (a *App) gatewayLogResponse(logs []models.GatewayRequestLog) []map[string]any {
+func (a *App) gatewayLogResponse(logs []models.GatewayRequestLog) ([]map[string]any, error) {
 	attemptLogs, err := a.gatewayRelatedRequestLogs(logs)
 	if err != nil {
-		attemptLogs = logs
+		return nil, err
 	}
-	routeByID, routeBySiteKey := a.gatewayLogRouteLookup(attemptLogs)
+	routeByID, routeBySiteKey, err := a.gatewayLogRouteLookup(attemptLogs)
+	if err != nil {
+		return nil, err
+	}
 	attempts := gatewayLogAttemptIndex(attemptLogs, routeByID, routeBySiteKey)
 	out := make([]map[string]any, 0, len(logs))
 	for _, item := range logs {
@@ -1544,7 +1766,7 @@ func (a *App) gatewayLogResponse(logs []models.GatewayRequestLog) []map[string]a
 			"previous_error":        chain.PreviousError,
 		})
 	}
-	return out
+	return out, nil
 }
 
 func (a *App) gatewayRelatedRequestLogs(logs []models.GatewayRequestLog) ([]models.GatewayRequestLog, error) {
@@ -1733,7 +1955,7 @@ func normalizedAttemptIndex(value int) int {
 	return value
 }
 
-func (a *App) gatewayLogRouteLookup(logs []models.GatewayRequestLog) (map[uint]models.GatewayRouteState, map[string]models.GatewayRouteState) {
+func (a *App) gatewayLogRouteLookup(logs []models.GatewayRequestLog) (map[uint]models.GatewayRouteState, map[string]models.GatewayRouteState, error) {
 	routeIDSet := map[uint]bool{}
 	siteIDSet := map[uint]bool{}
 	for _, item := range logs {
@@ -1747,7 +1969,7 @@ func (a *App) gatewayLogRouteLookup(logs []models.GatewayRequestLog) (map[uint]m
 	return a.gatewayLogRouteLookupForIDs(routeIDSet, siteIDSet)
 }
 
-func (a *App) gatewayLogRouteLookupForIDs(routeIDSet, siteIDSet map[uint]bool) (map[uint]models.GatewayRouteState, map[string]models.GatewayRouteState) {
+func (a *App) gatewayLogRouteLookupForIDs(routeIDSet, siteIDSet map[uint]bool) (map[uint]models.GatewayRouteState, map[string]models.GatewayRouteState, error) {
 	routeIDs := make([]uint, 0, len(routeIDSet))
 	for id := range routeIDSet {
 		routeIDs = append(routeIDs, id)
@@ -1757,18 +1979,25 @@ func (a *App) gatewayLogRouteLookupForIDs(routeIDSet, siteIDSet map[uint]bool) (
 		siteIDs = append(siteIDs, id)
 	}
 	if len(routeIDs) == 0 && len(siteIDs) == 0 {
-		return map[uint]models.GatewayRouteState{}, map[string]models.GatewayRouteState{}
+		return map[uint]models.GatewayRouteState{}, map[string]models.GatewayRouteState{}, nil
+	}
+	if a.DB == nil {
+		return nil, nil, errors.New("数据库连接不可用")
 	}
 
 	states := make([]models.GatewayRouteState, 0)
-	if len(routeIDs) > 0 && a.DB != nil {
+	if len(routeIDs) > 0 {
 		var byID []models.GatewayRouteState
-		_ = a.DB.Preload("Site").Where("id IN ?", routeIDs).Find(&byID).Error
+		if err := a.DB.Preload("Site").Where("id IN ?", routeIDs).Find(&byID).Error; err != nil {
+			return nil, nil, err
+		}
 		states = append(states, byID...)
 	}
-	if len(siteIDs) > 0 && a.DB != nil {
+	if len(siteIDs) > 0 {
 		var bySite []models.GatewayRouteState
-		_ = a.DB.Preload("Site").Where("site_id IN ?", siteIDs).Find(&bySite).Error
+		if err := a.DB.Preload("Site").Where("site_id IN ?", siteIDs).Find(&bySite).Error; err != nil {
+			return nil, nil, err
+		}
 		states = append(states, bySite...)
 	}
 
@@ -1778,24 +2007,29 @@ func (a *App) gatewayLogRouteLookupForIDs(routeIDSet, siteIDSet map[uint]bool) (
 		routeByID[state.ID] = state
 		routeBySiteKey[gatewayLogRouteKey(state.SiteID, state.KeyFingerprint)] = state
 	}
-	return routeByID, routeBySiteKey
+	return routeByID, routeBySiteKey, nil
 }
 
-func (a *App) gatewaySiteLookupForIDs(siteIDSet map[uint]bool) map[uint]models.Site {
+func (a *App) gatewaySiteLookupForIDs(siteIDSet map[uint]bool) (map[uint]models.Site, error) {
 	siteIDs := make([]uint, 0, len(siteIDSet))
 	for id := range siteIDSet {
 		siteIDs = append(siteIDs, id)
 	}
-	if len(siteIDs) == 0 || a.DB == nil {
-		return map[uint]models.Site{}
+	if len(siteIDs) == 0 {
+		return map[uint]models.Site{}, nil
+	}
+	if a.DB == nil {
+		return nil, errors.New("数据库连接不可用")
 	}
 	var sites []models.Site
-	_ = a.DB.Where("id IN ?", siteIDs).Find(&sites).Error
+	if err := a.DB.Where("id IN ?", siteIDs).Find(&sites).Error; err != nil {
+		return nil, err
+	}
 	siteByID := map[uint]models.Site{}
 	for _, site := range sites {
 		siteByID[site.ID] = site
 	}
-	return siteByID
+	return siteByID, nil
 }
 
 func gatewayLogRouteKey(siteID uint, fingerprint string) string {
@@ -1899,7 +2133,10 @@ func (a *App) ResetGatewayCircuit(w http.ResponseWriter, r *http.Request) {
 	state.ConsecutiveFailures = 0
 	state.CircuitOpenedAt = nil
 	state.CircuitOpenUntil = nil
-	_ = a.DB.Save(&state).Error
+	if err := a.DB.Save(&state).Error; err != nil {
+		writeError(w, http.StatusInternalServerError, "保存路由状态失败")
+		return
+	}
 	writeJSON(w, http.StatusOK, map[string]any{"id": state.ID, "is_enabled": state.IsEnabled, "circuit_state": state.CircuitState})
 }
 func (a *App) UpdateGatewayRouteType(w http.ResponseWriter, r *http.Request) {
@@ -1910,7 +2147,7 @@ func (a *App) UpdateGatewayRouteType(w http.ResponseWriter, r *http.Request) {
 	}
 	routeType := normalizeGatewayRouteType(payload.RouteType)
 	if routeType == "" {
-		writeError(w, http.StatusBadRequest, "route_type 必须是 general/claude/gpt_chat/codex/gemini")
+		writeError(w, http.StatusBadRequest, "route_type 必须是 general/claude/gpt/codex/gemini")
 		return
 	}
 	routePath := ""
@@ -1956,6 +2193,14 @@ func (a *App) UpdateGatewayRouteType(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
+		if err := refreshGatewayRouteSnapshotsForSite(a.DB, state.Site); err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		if err := a.DB.Preload("Site").First(&state, state.ID).Error; err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
 	}
 	writeJSON(w, http.StatusOK, gatewayRouteResponse(services.GatewayRoute{
 		State:          state,
@@ -1982,7 +2227,11 @@ func (a *App) DiagnoseGatewayRoute(w http.ResponseWriter, r *http.Request) {
 		APIKey:         services.GatewayRouteAPIKeyForState(state),
 		RequestBaseURL: services.GatewayRouteRequestBase(state, state.Site),
 	}
-	settings, _ := a.systemSettings()
+	settings, err := a.effectiveSystemSettings()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 	items := gatewayRouteDiagnosisItems(route, settings)
 	healthy := true
 	for _, item := range items {
@@ -2065,8 +2314,15 @@ func (a *App) ProbeGatewayRoutes(w http.ResponseWriter, r *http.Request) {
 	var payload struct {
 		RouteIDs []uint `json:"route_ids"`
 	}
-	_ = httpx.Decode(r, &payload)
-	settings, _ := a.systemSettings()
+	if err := httpx.Decode(r, &payload); err != nil {
+		writeError(w, http.StatusBadRequest, "请求格式错误")
+		return
+	}
+	settings, err := a.effectiveSystemSettings()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 	out := []map[string]any{}
 	if len(payload.RouteIDs) == 0 {
 		writeJSON(w, http.StatusOK, out)
@@ -2075,6 +2331,7 @@ func (a *App) ProbeGatewayRoutes(w http.ResponseWriter, r *http.Request) {
 	for _, routeID := range payload.RouteIDs {
 		result, err := services.ProbeGatewayRoute(r.Context(), a.DB, strconv.FormatUint(uint64(routeID), 10), settings.GatewayRequestTimeout)
 		if err != nil {
+			out = append(out, gatewayProbeErrorResponse(routeID, err.Error()))
 			continue
 		}
 		out = append(out, gatewayProbeResponse(result))
@@ -2082,7 +2339,11 @@ func (a *App) ProbeGatewayRoutes(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, out)
 }
 func (a *App) ProbeGatewayRoute(w http.ResponseWriter, r *http.Request) {
-	settings, _ := a.systemSettings()
+	settings, err := a.effectiveSystemSettings()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 	result, err := services.ProbeGatewayRoute(r.Context(), a.DB, chi.URLParam(r, "routeID"), settings.GatewayRequestTimeout)
 	if err != nil {
 		writeError(w, http.StatusNotFound, "网关路由不存在")
@@ -2107,7 +2368,11 @@ func (a *App) ProbeGatewayRouteBalance(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	settings, _ := a.systemSettings()
+	settings, err := a.effectiveSystemSettings()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 	result, err := services.ProbeGatewayRouteBalanceWithOptions(r.Context(), a.DB, uint(routeID), settings.GatewayRequestTimeout, services.BalanceProbeOptions{
 		BalanceURL: firstNonEmpty(payload.BalanceProbeURL, payload.BalanceURL),
 	})
@@ -2119,7 +2384,11 @@ func (a *App) ProbeGatewayRouteBalance(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) GatewayProxy(w http.ResponseWriter, r *http.Request) {
-	settings, _ := a.systemSettings()
+	settings, err := a.effectiveSystemSettings()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 	gatewayAPIKey := strings.TrimSpace(settings.GatewayAPIKey)
 	hasGroupKeys, err := services.HasGatewayRouteGroupAPIKeys(a.DB)
 	if err != nil {
@@ -2271,6 +2540,50 @@ func normalizeGatewayConcurrencyTransferStrategy(value string) string {
 	}
 }
 
+func refreshGatewayRouteSnapshotsForSite(db *gorm.DB, site models.Site) error {
+	if db == nil || site.ID == 0 {
+		return nil
+	}
+	var states []models.GatewayRouteState
+	if err := db.Where("site_id = ?", site.ID).Find(&states).Error; err != nil {
+		return err
+	}
+	for _, route := range states {
+		route.Site = site
+		requestBaseURLs := refreshedGatewayRouteRequestBaseCandidates(route, site)
+		if route.LastRequestBaseURL != "" && !gatewayStringSliceContains(requestBaseURLs, services.NormalizeBaseURL(route.LastRequestBaseURL)) {
+			route.LastRequestBaseURL = ""
+		}
+		updates := map[string]any{
+			"site_name_snapshot":     site.Name,
+			"site_base_url_snapshot": site.BaseURL,
+			"site_api_url_snapshot":  services.EncodeGatewayRequestBaseURLs(requestBaseURLs),
+			"last_request_base_url":  route.LastRequestBaseURL,
+		}
+		if err := db.Model(&route).Updates(updates).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func refreshedGatewayRouteRequestBaseCandidates(route models.GatewayRouteState, site models.Site) []string {
+	manual := services.GatewayRouteManualRequestBaseURLs(route, site)
+	if len(manual) > 0 {
+		return manual
+	}
+	return services.GatewayRequestBaseCandidates(site)
+}
+
+func gatewayStringSliceContains(values []string, target string) bool {
+	for _, value := range values {
+		if value == target {
+			return true
+		}
+	}
+	return false
+}
+
 func gatewayRouteResponse(route services.GatewayRoute) map[string]any {
 	state := route.State
 	successRate := 0.0
@@ -2351,6 +2664,32 @@ func gatewayRouteResponse(route services.GatewayRoute) map[string]any {
 func gatewayProbeResponse(result services.GatewayProbeResult) map[string]any {
 	state := result.Route.State
 	return map[string]any{"id": state.ID, "site_id": state.SiteID, "site_name": services.GatewayRouteSiteLabel(result.Route), "request_base_url": result.Route.RequestBaseURL, "key_name": state.KeyName, "key_fingerprint": state.KeyFingerprint, "ok": result.OK, "status_code": result.StatusCode, "latency_ms": result.LatencyMS, "message": services.RedactGatewayText(result.Message), "models": result.Models, "supported_models": services.GatewayRouteSupportedModels(state), "model_probe_status": state.ModelProbeStatus, "model_probe_message": services.RedactGatewayText(state.ModelProbeMessage), "model_probe_updated_at": state.ModelProbeUpdatedAt, "last_status_code": state.LastStatusCode, "last_error": redactedStringPtr(state.LastError), "last_latency_ms": state.LastLatencyMS, "last_success_at": state.LastSuccessAt, "last_failure_at": state.LastFailureAt, "checked_at": result.CheckedAt}
+}
+
+func gatewayProbeErrorResponse(routeID uint, message string) map[string]any {
+	return map[string]any{
+		"id":                     routeID,
+		"site_id":                0,
+		"site_name":              "",
+		"request_base_url":       "",
+		"key_name":               "",
+		"key_fingerprint":        "",
+		"ok":                     false,
+		"status_code":            nil,
+		"latency_ms":             nil,
+		"message":                services.RedactGatewayText(message),
+		"models":                 []string{},
+		"supported_models":       []string{},
+		"model_probe_status":     "failed",
+		"model_probe_message":    services.RedactGatewayText(message),
+		"model_probe_updated_at": nil,
+		"last_status_code":       nil,
+		"last_error":             nil,
+		"last_latency_ms":        nil,
+		"last_success_at":        nil,
+		"last_failure_at":        nil,
+		"checked_at":             time.Now().UTC(),
+	}
 }
 
 func normalizeGatewayRouteType(value string) string {

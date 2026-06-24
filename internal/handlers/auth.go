@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 	"unicode"
+	"unicode/utf8"
 
 	"ai-sign-in-gateway/internal/httpx"
 	"ai-sign-in-gateway/internal/middleware"
@@ -17,7 +18,7 @@ import (
 	"gorm.io/gorm"
 )
 
-const maxAdminUsernameBytes = 50
+const maxAdminUsernameRunes = 50
 
 func (a *App) Login(w http.ResponseWriter, r *http.Request) {
 	var payload schemas.LoginRequest
@@ -31,12 +32,12 @@ func (a *App) Login(w http.ResponseWriter, r *http.Request) {
 	if validUsername {
 		err = a.DB.Where("username = ?", username).First(&admin).Error
 	}
-	if errors.Is(err, gorm.ErrRecordNotFound) || !security.VerifyPassword(payload.Password, admin.PasswordHash) {
-		writeError(w, http.StatusUnauthorized, "用户名或密码错误")
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+	if errors.Is(err, gorm.ErrRecordNotFound) || !security.VerifyPassword(payload.Password, admin.PasswordHash) {
+		writeError(w, http.StatusUnauthorized, "用户名或密码错误")
 		return
 	}
 	if !admin.IsEnabled {
@@ -220,16 +221,21 @@ func (a *App) CreateAdminUser(w http.ResponseWriter, r *http.Request) {
 		Role:         role,
 		IsEnabled:    isEnabled,
 	}
-	if err := a.DB.Create(&admin).Error; err != nil {
+	now := time.Now().UTC()
+	if err := a.DB.Model(&models.AdminUser{}).Create(map[string]any{
+		"username":      admin.Username,
+		"password_hash": admin.PasswordHash,
+		"role":          admin.Role,
+		"is_enabled":    admin.IsEnabled,
+		"created_at":    now,
+		"updated_at":    now,
+	}).Error; err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if !isEnabled {
-		if err := a.DB.Model(&admin).Update("is_enabled", false).Error; err != nil {
-			writeError(w, http.StatusInternalServerError, err.Error())
-			return
-		}
-		admin.IsEnabled = false
+	if err := a.DB.Where("username = ?", username).First(&admin).Error; err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 	writeJSON(w, http.StatusCreated, adminUserResponse(admin))
 }
@@ -262,12 +268,15 @@ func (a *App) UpdateAdminUser(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if username != target.Username {
+			if target.ID == current.ID {
+				writeError(w, http.StatusBadRequest, "请通过账号设置修改当前登录账号")
+				return
+			}
 			if err := a.ensureAdminUsernameAvailable(username, target.ID); err != nil {
 				writeAdminAvailabilityError(w, err)
 				return
 			}
 			updates["username"] = username
-			target.Username = username
 		}
 	}
 	if strings.TrimSpace(payload.Role) != "" {
@@ -276,30 +285,24 @@ func (a *App) UpdateAdminUser(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusBadRequest, "管理员角色无效")
 			return
 		}
-		if target.Role == models.AdminRoleSuper && role != models.AdminRoleSuper {
-			if err := a.ensureAnotherEnabledSuperAdmin(target.ID); err != nil {
-				writeAdminLastSuperError(w, err)
-				return
-			}
+		if target.ID == current.ID && role != target.Role {
+			writeError(w, http.StatusBadRequest, "请通过账号设置修改当前登录账号")
+			return
 		}
 		updates["role"] = role
-		target.Role = role
 	}
 	if payload.IsEnabled != nil {
 		if target.ID == current.ID && !*payload.IsEnabled {
 			writeError(w, http.StatusBadRequest, "不能停用当前登录账号")
 			return
 		}
-		if target.Role == models.AdminRoleSuper && !*payload.IsEnabled {
-			if err := a.ensureAnotherEnabledSuperAdmin(target.ID); err != nil {
-				writeAdminLastSuperError(w, err)
-				return
-			}
-		}
 		updates["is_enabled"] = *payload.IsEnabled
-		target.IsEnabled = *payload.IsEnabled
 	}
 	if strings.TrimSpace(payload.NewPassword) != "" {
+		if target.ID == current.ID {
+			writeError(w, http.StatusBadRequest, "请通过账号设置修改当前登录账号")
+			return
+		}
 		if err := validateAdminPassword(payload.NewPassword); err != nil {
 			writeError(w, http.StatusBadRequest, err.Error())
 			return
@@ -315,8 +318,8 @@ func (a *App) UpdateAdminUser(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, adminUserResponse(target))
 		return
 	}
-	if err := a.DB.Model(&target).Updates(updates).Error; err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+	if err := a.updateAdminUserWithLastSuperGuard(target, updates); err != nil {
+		writeAdminMutationError(w, err)
 		return
 	}
 	if err := a.DB.First(&target, target.ID).Error; err != nil {
@@ -345,14 +348,8 @@ func (a *App) DeleteAdminUser(w http.ResponseWriter, r *http.Request) {
 		writeAdminLoadError(w, err)
 		return
 	}
-	if target.Role == models.AdminRoleSuper {
-		if err := a.ensureAnotherEnabledSuperAdmin(target.ID); err != nil {
-			writeAdminLastSuperError(w, err)
-			return
-		}
-	}
-	if err := a.DB.Delete(&target).Error; err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+	if err := a.deleteAdminUserWithLastSuperGuard(target); err != nil {
+		writeAdminMutationError(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"deleted": true})
@@ -394,7 +391,7 @@ func adminUserResponse(admin models.AdminUser) schemas.AdminUserResponse {
 
 func validAdminUsername(value string) (string, bool) {
 	username := strings.TrimSpace(value)
-	if username == "" || len(username) > maxAdminUsernameBytes {
+	if username == "" || utf8.RuneCountInString(username) > maxAdminUsernameRunes {
 		return "", false
 	}
 	for _, r := range username {
@@ -429,8 +426,12 @@ func (a *App) ensureAdminUsernameAvailable(username string, excludeID uint) erro
 }
 
 func (a *App) ensureAnotherEnabledSuperAdmin(excludeID uint) error {
+	return ensureAnotherEnabledSuperAdmin(a.DB, excludeID)
+}
+
+func ensureAnotherEnabledSuperAdmin(db *gorm.DB, excludeID uint) error {
 	var count int64
-	if err := a.DB.Model(&models.AdminUser{}).
+	if err := db.Model(&models.AdminUser{}).
 		Where("role = ? AND is_enabled = ? AND id <> ?", models.AdminRoleSuper, true, excludeID).
 		Count(&count).Error; err != nil {
 		return err
@@ -439,6 +440,46 @@ func (a *App) ensureAnotherEnabledSuperAdmin(excludeID uint) error {
 		return errAdminLastSuper
 	}
 	return nil
+}
+
+func (a *App) updateAdminUserWithLastSuperGuard(target models.AdminUser, updates map[string]any) error {
+	return a.DB.Transaction(func(tx *gorm.DB) error {
+		var fresh models.AdminUser
+		if err := tx.First(&fresh, target.ID).Error; err != nil {
+			return err
+		}
+		if fresh.Role == models.AdminRoleSuper && demotesOrDisablesSuper(updates) {
+			if err := ensureAnotherEnabledSuperAdmin(tx, target.ID); err != nil {
+				return err
+			}
+		}
+		return tx.Model(&fresh).Updates(updates).Error
+	})
+}
+
+func (a *App) deleteAdminUserWithLastSuperGuard(target models.AdminUser) error {
+	return a.DB.Transaction(func(tx *gorm.DB) error {
+		var fresh models.AdminUser
+		if err := tx.First(&fresh, target.ID).Error; err != nil {
+			return err
+		}
+		if fresh.Role == models.AdminRoleSuper {
+			if err := ensureAnotherEnabledSuperAdmin(tx, fresh.ID); err != nil {
+				return err
+			}
+		}
+		return tx.Delete(&fresh).Error
+	})
+}
+
+func demotesOrDisablesSuper(updates map[string]any) bool {
+	if role, ok := updates["role"].(string); ok && role != models.AdminRoleSuper {
+		return true
+	}
+	if enabled, ok := updates["is_enabled"].(bool); ok && !enabled {
+		return true
+	}
+	return false
 }
 
 var (
@@ -457,6 +498,14 @@ func writeAdminAvailabilityError(w http.ResponseWriter, err error) {
 func writeAdminLastSuperError(w http.ResponseWriter, err error) {
 	if errors.Is(err, errAdminLastSuper) {
 		writeError(w, http.StatusBadRequest, "至少需要保留一个启用的超级管理员")
+		return
+	}
+	writeError(w, http.StatusInternalServerError, err.Error())
+}
+
+func writeAdminMutationError(w http.ResponseWriter, err error) {
+	if errors.Is(err, errAdminLastSuper) {
+		writeAdminLastSuperError(w, err)
 		return
 	}
 	writeError(w, http.StatusInternalServerError, err.Error())

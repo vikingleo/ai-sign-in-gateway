@@ -266,6 +266,9 @@ func stringValue(source models.JSONMap, key, fallback string) string {
 }
 
 func pathValue(payload any, path string) any {
+	if strings.TrimSpace(path) == "" {
+		return nil
+	}
 	current := payload
 	for _, segment := range strings.Split(path, ".") {
 		if segment == "" {

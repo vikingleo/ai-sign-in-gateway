@@ -1,0 +1,296 @@
+@import './management-site-editor-overrides.css';
+
+.gateway-monitor-page.gateway-monitor-page .gateway-overview-shell,
+.gateway-monitor-page.gateway-monitor-page .gateway-panel,
+.gateway-monitor-page.gateway-monitor-page .gateway-metric-card,
+.gateway-route-page.gateway-route-page .route-pool-card--standalone,
+.sites-page.sites-page .sites-stat-card.ant-card,
+.sites-page.sites-page .sites-list-card.ant-card,
+.site-editor-modal.site-editor-modal .site-editor-modal__frame,
+.site-editor-modal.site-editor-modal .site-editor-card,
+.site-editor-modal.site-editor-modal .site-editor-subblock,
+.site-editor-modal.site-editor-modal .api-key-dialog-item {
+  border: 1px solid var(--border-soft) !important;
+  border-radius: var(--radius-container) !important;
+  background: var(--bg-panel) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+.gateway-monitor-page.gateway-monitor-page .gateway-metric-card::before,
+.sites-page.sites-page .sites-stat-card::before,
+.site-editor-modal.site-editor-modal .site-editor-modal__frame::before {
+  display: none !important;
+  content: none !important;
+}
+
+.gateway-monitor-page .gateway-overview-shell .ant-card-body,
+.gateway-route-page .route-pool-card--standalone .ant-card-body,
+.sites-page .sites-list-card .ant-card-body {
+  background: var(--bg-panel) !important;
+}
+
+.gateway-monitor-page.gateway-monitor-page .gateway-panel__head,
+.site-editor-modal.site-editor-modal .site-editor-modal__header {
+  padding: 16px 18px 10px !important;
+  border-bottom: 1px solid var(--border-muted) !important;
+  flex: 0 0 auto !important;
+}
+
+.gateway-monitor-page.gateway-monitor-page .gateway-panel__title,
+.gateway-monitor-page.gateway-monitor-page .gateway-metric-card__value,
+.sites-page.sites-page .sites-stat-card__value,
+.sites-page.sites-page .sites-list-card .ant-card-head-title,
+.site-editor-modal.site-editor-modal .site-editor-modal__title,
+.site-editor-modal.site-editor-modal .site-editor-section-head h3 {
+  color: var(--text-main) !important;
+  font-weight: 700 !important;
+}
+
+.gateway-monitor-page.gateway-monitor-page .gateway-panel__title,
+.sites-page.sites-page .sites-list-card .ant-card-head-title,
+.site-editor-modal.site-editor-modal .site-editor-modal__title {
+  font-size: 16px !important;
+}
+
+.gateway-monitor-page.gateway-monitor-page .gateway-metric-card__label,
+.gateway-monitor-page.gateway-monitor-page .gateway-usage-summary__item span,
+.gateway-monitor-page.gateway-monitor-page .gateway-active-feed__meta span,
+.sites-page.sites-page .sites-stat-card__eyebrow,
+.sites-page.sites-page .sites-stat-card__desc,
+.sites-page.sites-page .sites-list-toolbar__meta,
+.site-editor-modal.site-editor-modal .site-editor-section-head p,
+.site-editor-modal.site-editor-modal .field-help {
+  color: var(--text-muted) !important;
+}
+
+.gateway-monitor-page.gateway-monitor-page .gateway-usage-summary__item,
+.gateway-monitor-page.gateway-monitor-page .gateway-active-feed--embedded,
+.gateway-monitor-page.gateway-monitor-page .route-pool-status__card,
+.gateway-monitor-page.gateway-monitor-page .route-pool-preview__row,
+.gateway-monitor-page.gateway-monitor-page .gateway-strategy-board__item,
+.site-editor-modal.site-editor-modal .api-key-dialog-item {
+  border: 1px solid var(--border-muted) !important;
+  border-radius: var(--radius-container) !important;
+  background: var(--bg-subtle) !important;
+  box-shadow: none !important;
+}
+
+.gateway-monitor-page.gateway-monitor-page .ant-empty {
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+
+.gateway-monitor-page.gateway-monitor-page .ant-empty-description {
+  overflow-wrap: anywhere !important;
+}
+
+.gateway-route-page.gateway-route-page .route-pool-card--standalone,
+.sites-page.sites-page .sites-list-card.ant-card {
+  overflow: hidden !important;
+}
+
+.gateway-route-page.gateway-route-page .route-pool-filters,
+.sites-page.sites-page .sites-list-toolbar {
+  gap: 8px !important;
+  border-bottom-color: var(--border-muted) !important;
+  background: var(--bg-panel) !important;
+}
+
+.gateway-route-page.gateway-route-page .route-pool-filters {
+  padding: 10px 12px !important;
+}
+
+.sites-page.sites-page .sites-list-card .ant-card-head {
+  min-height: 52px !important;
+  padding: 0 16px !important;
+  border-bottom-color: var(--border-muted) !important;
+  background: var(--bg-panel) !important;
+}
+
+.sites-page.sites-page .sites-list-card .ant-card-head-title,
+.sites-page.sites-page .sites-list-card .ant-card-extra {
+  padding: 12px 0 !important;
+}
+
+.gateway-route-page.gateway-route-page .route-pool-filter .ant-select-selector,
+.gateway-route-page.gateway-route-page .route-pool-filter .ant-input,
+.sites-page.sites-page .sites-list-toolbar__search .ant-input-affix-wrapper,
+.sites-page.sites-page .sites-list-toolbar__search .ant-input {
+  border-color: var(--border-soft) !important;
+  border-radius: var(--radius-control) !important;
+  background: var(--bg-panel) !important;
+  box-shadow: none !important;
+}
+.gateway-route-page.gateway-route-page .route-pool-filter .ant-input,
+.sites-page.sites-page .sites-list-toolbar__search .ant-input {
+  min-height: var(--control-height) !important;
+}
+
+.sites-page.sites-page .sites-toolbar__seg-btn.ant-btn,
+.sites-page.sites-page .sites-toolbar__ghost-btn.ant-btn,
+.sites-page.sites-page .sites-toolbar__create-btn.ant-btn,
+.sites-page.sites-page .sites-list-toolbar__btn.ant-btn,
+.gateway-route-page.gateway-route-page .gateway-toolbar-actions.ant-space .ant-btn,
+.gateway-route-page.gateway-route-page .route-probe-control .ant-btn,
+.gateway-route-page.gateway-route-page .gateway-access--route .ant-btn,
+.gateway-route-page.gateway-route-page .route-pool-type-tabs .ant-btn,
+.gateway-route-page.gateway-route-page .route-pool-clear.ant-btn {
+  height: var(--control-height) !important;
+  min-height: var(--control-height) !important;
+  padding: 0 14px !important;
+  border-color: var(--border-soft) !important;
+  border-radius: var(--radius-control) !important;
+  background: var(--bg-panel) !important;
+  color: var(--text-main) !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  box-shadow: none !important;
+  white-space: nowrap !important;
+}
+
+.sites-page.sites-page .sites-toolbar__seg-btn.ant-btn,
+.sites-page.sites-page .sites-toolbar__ghost-btn.ant-btn,
+.sites-page.sites-page .sites-list-toolbar__btn.ant-btn,
+.gateway-route-page.gateway-route-page .gateway-toolbar-actions.ant-space .ant-btn,
+.gateway-route-page.gateway-route-page .route-probe-control .ant-btn {
+  min-width: 104px !important;
+}
+
+.sites-page.sites-page .sites-toolbar__seg-btn--primary.ant-btn,
+.sites-page.sites-page .sites-toolbar__ghost-btn--strong.ant-btn,
+.sites-page.sites-page .sites-toolbar__create-btn.ant-btn,
+.gateway-route-page.gateway-route-page .gateway-toolbar-actions.ant-space .ant-btn-primary,
+.gateway-route-page.gateway-route-page .route-pool-type-tabs .ant-btn-primary {
+  min-width: 132px !important;
+  border-color: var(--accent) !important;
+  background: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+}
+
+.sites-page.sites-page .sites-toolbar__ghost-btn--strong.ant-btn {
+  min-width: 152px !important;
+}
+
+.sites-page.sites-page .sites-toolbar__actions > span,
+.sites-page.sites-page .sites-toolbar__actions .ant-tooltip,
+.gateway-route-page.gateway-route-page .gateway-toolbar-actions.ant-space .ant-space-item {
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+.gateway-route-page.gateway-route-page .gateway-toolbar-actions.ant-space .ant-space-item {
+  flex: 0 0 auto !important;
+}
+
+.sites-page.sites-page .sites-toolbar__actions > span {
+  min-width: 104px !important;
+}
+
+.sites-page.sites-page .sites-toolbar__seg-btn.ant-btn:not(:disabled):not(.ant-btn-disabled):hover,
+.sites-page.sites-page .sites-toolbar__ghost-btn.ant-btn:not(:disabled):not(.ant-btn-disabled):hover,
+.sites-page.sites-page .sites-list-toolbar__btn.ant-btn:not(:disabled):not(.ant-btn-disabled):hover,
+.gateway-route-page.gateway-route-page .gateway-toolbar-actions.ant-space .ant-btn:not(:disabled):not(.ant-btn-disabled):hover,
+.gateway-route-page.gateway-route-page .route-probe-control .ant-btn:not(:disabled):not(.ant-btn-disabled):hover,
+.gateway-route-page.gateway-route-page .gateway-access--route .ant-btn:not(:disabled):not(.ant-btn-disabled):hover,
+.gateway-route-page.gateway-route-page .route-pool-type-tabs .ant-btn:not(:disabled):not(.ant-btn-disabled):hover,
+.gateway-route-page.gateway-route-page .route-pool-clear.ant-btn:not(:disabled):not(.ant-btn-disabled):hover,
+.sites-page.sites-page .sites-toolbar__seg-btn.ant-btn:not(:disabled):not(.ant-btn-disabled):focus-visible,
+.sites-page.sites-page .sites-toolbar__ghost-btn.ant-btn:not(:disabled):not(.ant-btn-disabled):focus-visible,
+.sites-page.sites-page .sites-list-toolbar__btn.ant-btn:not(:disabled):not(.ant-btn-disabled):focus-visible,
+.gateway-route-page.gateway-route-page .gateway-toolbar-actions.ant-space .ant-btn:not(:disabled):not(.ant-btn-disabled):focus-visible,
+.gateway-route-page.gateway-route-page .route-probe-control .ant-btn:not(:disabled):not(.ant-btn-disabled):focus-visible,
+.gateway-route-page.gateway-route-page .gateway-access--route .ant-btn:not(:disabled):not(.ant-btn-disabled):focus-visible,
+.gateway-route-page.gateway-route-page .route-pool-type-tabs .ant-btn:not(:disabled):not(.ant-btn-disabled):focus-visible,
+.gateway-route-page.gateway-route-page .route-pool-clear.ant-btn:not(:disabled):not(.ant-btn-disabled):focus-visible {
+  border-color: rgba(37, 99, 235, 0.34) !important;
+  background: var(--accent-soft) !important;
+  color: var(--accent-strong) !important;
+  box-shadow: var(--shadow-control-hover) !important;
+  transform: translateY(-1px);
+}
+
+.sites-page.sites-page .sites-toolbar__seg-btn--primary.ant-btn:not(:disabled):not(.ant-btn-disabled):hover,
+.sites-page.sites-page .sites-toolbar__ghost-btn--strong.ant-btn:not(:disabled):not(.ant-btn-disabled):hover,
+.sites-page.sites-page .sites-toolbar__create-btn.ant-btn:not(:disabled):not(.ant-btn-disabled):hover,
+.gateway-route-page.gateway-route-page .gateway-toolbar-actions.ant-space .ant-btn-primary:not(:disabled):not(.ant-btn-disabled):hover,
+.gateway-route-page.gateway-route-page .route-pool-type-tabs .ant-btn-primary:not(:disabled):not(.ant-btn-disabled):hover,
+.sites-page.sites-page .sites-toolbar__seg-btn--primary.ant-btn:not(:disabled):not(.ant-btn-disabled):focus-visible,
+.sites-page.sites-page .sites-toolbar__ghost-btn--strong.ant-btn:not(:disabled):not(.ant-btn-disabled):focus-visible,
+.sites-page.sites-page .sites-toolbar__create-btn.ant-btn:not(:disabled):not(.ant-btn-disabled):focus-visible,
+.gateway-route-page.gateway-route-page .gateway-toolbar-actions.ant-space .ant-btn-primary:not(:disabled):not(.ant-btn-disabled):focus-visible,
+.gateway-route-page.gateway-route-page .route-pool-type-tabs .ant-btn-primary:not(:disabled):not(.ant-btn-disabled):focus-visible {
+  border-color: var(--accent-strong) !important;
+  background: var(--accent-strong) !important;
+  color: var(--accent-foreground) !important;
+  box-shadow: 0 6px 14px rgba(37, 99, 235, 0.24) !important;
+  transform: translateY(-1px);
+}
+
+.sites-page.sites-page .sites-toolbar__seg-btn.ant-btn:not(:disabled):not(.ant-btn-disabled):active,
+.sites-page.sites-page .sites-toolbar__ghost-btn.ant-btn:not(:disabled):not(.ant-btn-disabled):active,
+.sites-page.sites-page .sites-toolbar__create-btn.ant-btn:not(:disabled):not(.ant-btn-disabled):active,
+.sites-page.sites-page .sites-list-toolbar__btn.ant-btn:not(:disabled):not(.ant-btn-disabled):active,
+.gateway-route-page.gateway-route-page .gateway-toolbar-actions.ant-space .ant-btn:not(:disabled):not(.ant-btn-disabled):active,
+.gateway-route-page.gateway-route-page .route-probe-control .ant-btn:not(:disabled):not(.ant-btn-disabled):active,
+.gateway-route-page.gateway-route-page .gateway-access--route .ant-btn:not(:disabled):not(.ant-btn-disabled):active,
+.gateway-route-page.gateway-route-page .route-pool-type-tabs .ant-btn:not(:disabled):not(.ant-btn-disabled):active,
+.gateway-route-page.gateway-route-page .route-pool-clear.ant-btn:not(:disabled):not(.ant-btn-disabled):active {
+  box-shadow: var(--shadow-control-active) !important;
+  transform: translateY(0);
+}
+
+.sites-page.sites-page .sites-toolbar__segment .ant-btn-icon,
+.sites-page.sites-page .sites-toolbar__actions .ant-btn-icon,
+.gateway-route-page.gateway-route-page .gateway-toolbar-actions.ant-space .ant-btn-icon,
+.gateway-route-page.gateway-route-page .route-probe-control .ant-btn-icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 16px !important;
+  min-width: 16px !important;
+  margin-inline-end: 6px !important;
+  line-height: 1 !important;
+}
+
+.gateway-route-page.gateway-route-page .table-fill--management .ant-table-thead > tr > th,
+.sites-page.sites-page .table-fill--management .ant-table-thead > tr > th,
+.gateway-monitor-page.gateway-monitor-page .gateway-usage-table .ant-table-thead > tr > th {
+  height: 38px !important;
+  padding: 0 12px !important;
+  border-bottom: 1px solid var(--border-soft) !important;
+  background: var(--bg-muted) !important;
+  color: var(--text-muted) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+.gateway-route-page.gateway-route-page .table-fill--management .ant-table-tbody > tr > td,
+.sites-page.sites-page .table-fill--management .ant-table-tbody > tr > td,
+.gateway-monitor-page.gateway-monitor-page .gateway-usage-table .ant-table-tbody > tr > td {
+  padding: 9px 12px !important;
+  border-bottom: 1px solid var(--border-muted) !important;
+  background: var(--bg-panel) !important;
+  color: var(--text-main) !important;
+  font-size: 13px !important;
+}
+
+.gateway-route-page.gateway-route-page .table-fill--management .ant-table-tbody > tr:hover > td,
+.sites-page.sites-page .table-fill--management .ant-table-tbody > tr:hover > td,
+.gateway-monitor-page.gateway-monitor-page .gateway-usage-table .ant-table-tbody > tr:hover > td {
+  background: var(--bg-subtle) !important;
+}
+
+.ant-modal .ant-modal-close,
+.ant-drawer .ant-drawer-close {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: var(--control-height) !important;
+  height: var(--control-height) !important;
+}
+
+.ant-drawer-body .table-fill--management {
+  border: 1px solid var(--border-muted) !important;
+  border-radius: var(--radius-container) !important;
+}

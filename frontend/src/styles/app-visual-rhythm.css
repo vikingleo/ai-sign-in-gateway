@@ -1,0 +1,220 @@
+/* Shared rhythm: 8/13/21/34/55 keeps spacing and controls aligned. */
+
+:root {
+  --rhythm-1: 8px;
+  --rhythm-2: 13px;
+  --rhythm-3: 21px;
+  --rhythm-4: 34px;
+  --rhythm-5: 55px;
+  --control-height: 36px;
+  --control-height-comfort: 40px;
+  --control-height-roomy: 44px;
+  --field-min-width: 220px;
+  --switch-height: 28px;
+  --switch-handle-size: 20px;
+  --switch-handle-offset: 4px;
+  --switch-handle-gap: 7px;
+  --switch-text-pad: 8px;
+  --switch-width-compact: 62px;
+  --switch-width-text: 76px;
+  --switch-width-wide: 88px;
+  --switch-track-off: #dbe3ef;
+  --switch-track-off-hover: #cbd5e1;
+  --switch-track-disabled: #e2e8f0;
+  --switch-track-disabled-checked: #cbd5e1;
+  --switch-text-off: #334155;
+  --switch-text-on: var(--accent-foreground);
+  --switch-text-disabled: #475569;
+  --rhythm-page-gutter-x: 21px;
+  --rhythm-content-gutter: 13px;
+}
+
+body {
+  letter-spacing: 0;
+}
+
+.app-content,
+.desktop-console .desktop-main,
+.login-screen .login-page {
+  padding-inline: var(--rhythm-page-gutter-x) !important;
+}
+
+.ant-layout-header.app-header {
+  padding-inline: var(--rhythm-page-gutter-x) !important;
+}
+
+.page-stack,
+.overview-screen,
+.desktop-console .desktop-main,
+.chat-workbench .session-history {
+  gap: var(--rhythm-content-gutter) !important;
+}
+
+.admin-card.ant-card,
+.login-card,
+.overview-metric-card.ant-card,
+.overview-panel.ant-card,
+.gateway-overview-shell,
+.gateway-panel,
+.gateway-metric-card,
+.gateway-route-page .route-pool-card--standalone,
+.sites-page .sites-stat-card.ant-card,
+.sites-page .sites-list-card.ant-card,
+.settings-page .settings-tab-card.ant-card,
+.desktop-console .summary-tile,
+.desktop-console .service-strip,
+.desktop-console .desktop-alerts,
+.desktop-console .desktop-settings-section,
+.chat-workbench .session-empty,
+.chat-workbench .session-composer__frame {
+  border: 1px solid var(--border-soft) !important;
+  border-radius: var(--radius-container) !important;
+  background: var(--bg-panel) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+.gateway-route-page .route-pool-card--standalone,
+.sites-page .sites-list-card.ant-card {
+  overflow: hidden !important;
+}
+
+.gateway-route-page .route-pool-card--standalone .ant-card-head,
+.sites-page .sites-list-card .ant-card-head,
+.admin-card .ant-card-head {
+  min-height: var(--rhythm-5) !important;
+  padding-inline: var(--rhythm-3) !important;
+  background: var(--bg-panel) !important;
+  border-bottom: 1px solid var(--border-muted) !important;
+}
+
+.gateway-route-page .route-pool-card--standalone .ant-card-head-title,
+.sites-page .sites-list-card .ant-card-head-title,
+.admin-card .ant-card-head-title {
+  padding-block: var(--rhythm-2) !important;
+  color: var(--text-main) !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  line-height: 1.35 !important;
+}
+
+.gateway-route-page .route-pool-card--standalone .ant-card-extra,
+.sites-page .sites-list-card .ant-card-extra,
+.admin-card .ant-card-extra {
+  padding-block: var(--rhythm-2) !important;
+}
+
+.ant-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: var(--control-height);
+  line-height: 1.2 !important;
+}
+
+.ant-btn-sm,
+.site-action-btn.ant-btn,
+.site-actions-menu-button.ant-btn,
+.gateway-actions-menu-button.ant-btn,
+.desktop-console .service-line__copy,
+.chat-workbench .session-attachment button {
+  min-width: var(--control-height) !important;
+  height: var(--control-height) !important;
+  min-height: var(--control-height) !important;
+  padding-inline: 10px !important;
+  border-radius: var(--radius-control) !important;
+}
+
+.ant-btn-icon-only,
+.site-actions-menu-button.ant-btn,
+.gateway-actions-menu-button.ant-btn,
+.desktop-console .service-line__copy,
+.chat-workbench .session-attachment button {
+  width: var(--control-height) !important;
+  padding-inline: 0 !important;
+}
+
+.ant-input:not(textarea),
+.ant-input-affix-wrapper,
+.ant-select:not(.ant-select-customize-input) .ant-select-selector,
+.ant-input-number,
+.ant-picker {
+  height: var(--control-height) !important;
+  min-height: var(--control-height) !important;
+}
+
+.ant-input:not(textarea),
+.ant-input-number-input {
+  line-height: calc(var(--control-height) - 2px) !important;
+}
+
+.ant-input-affix-wrapper .ant-input {
+  min-width: 0 !important;
+  height: auto !important;
+  min-height: 0 !important;
+  line-height: 1.35 !important;
+}
+
+.ant-input-password.ant-input-affix-wrapper {
+  display: inline-flex !important;
+  gap: 8px;
+}
+
+.ant-input-password .ant-input-suffix {
+  flex: 0 0 auto;
+  margin-inline-start: 4px !important;
+}
+
+textarea.ant-input {
+  height: auto !important;
+  min-height: 96px !important;
+  padding: 10px 12px !important;
+  line-height: 1.5 !important;
+  resize: vertical;
+}
+
+textarea.ant-input[rows='2'] {
+  min-height: 72px !important;
+}
+
+textarea.ant-input[rows='3'] {
+  min-height: 96px !important;
+}
+
+textarea.ant-input[rows='4'] {
+  min-height: 120px !important;
+}
+
+textarea.ant-input[rows='8'] {
+  min-height: 180px !important;
+}
+
+textarea.ant-input[rows='12'] {
+  min-height: 240px !important;
+}
+
+textarea.ant-input[rows='20'] {
+  min-height: 360px !important;
+}
+
+.ant-input-affix-wrapper {
+  align-items: center !important;
+  padding-block: 0 !important;
+}
+
+.ant-select:not(.ant-select-customize-input) .ant-select-selector {
+  align-items: center !important;
+  padding-block: 0 !important;
+}
+
+.ant-select-single {
+  height: var(--control-height) !important;
+}
+
+.ant-input-number-handler-wrap {
+  width: var(--control-height) !important;
+}
+
+.ant-input-number-handler {
+  min-width: var(--control-height) !important;
+  height: 17px !important;
+}

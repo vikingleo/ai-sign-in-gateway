@@ -20,6 +20,331 @@ import (
 	"gorm.io/gorm"
 )
 
+func newGatewayAdminTestDB(t *testing.T) *gorm.DB {
+	t.Helper()
+	name := strings.ReplaceAll(t.Name(), "/", "-")
+	db, err := gorm.Open(sqlite.Open("file:"+name+"?mode=memory&cache=shared"), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	if err := db.AutoMigrate(models.All()...); err != nil {
+		t.Fatalf("auto migrate: %v", err)
+	}
+	return db
+}
+
+func seedGatewayAdminSettings(t *testing.T, db *gorm.DB, overrides models.SystemSetting) models.SystemSetting {
+	t.Helper()
+	settings := models.SystemSetting{
+		ID:                                 1,
+		GatewayRouteStrategy:               "round_robin",
+		GatewayFailureRetryMode:            "retryable",
+		GatewayConcurrencyTransferStrategy: "limit_only",
+		GatewayConcurrencyOverflowStrategy: "latency_first",
+		GatewayFailureThreshold:            3,
+		GatewayCooldownSeconds:             180,
+		GatewayRequestTimeout:              60,
+		GatewayMaxAttempts:                 0,
+		GatewayRouteConcurrencyLimit:       5,
+		GatewaySmartLatencyBias:            1,
+		GatewaySmartConcurrencyBias:        1.5,
+		GatewaySmartFailureBias:            1,
+		GatewaySmartPriorityBias:           0.5,
+	}
+	if overrides.GatewayRouteStrategy != "" {
+		settings.GatewayRouteStrategy = overrides.GatewayRouteStrategy
+	}
+	if overrides.GatewayFailureRetryMode != "" {
+		settings.GatewayFailureRetryMode = overrides.GatewayFailureRetryMode
+	}
+	if overrides.GatewayConcurrencyTransferStrategy != "" {
+		settings.GatewayConcurrencyTransferStrategy = overrides.GatewayConcurrencyTransferStrategy
+	}
+	if overrides.GatewayConcurrencyOverflowStrategy != "" {
+		settings.GatewayConcurrencyOverflowStrategy = overrides.GatewayConcurrencyOverflowStrategy
+	}
+	if overrides.GatewayAPIKey != "" {
+		settings.GatewayAPIKey = overrides.GatewayAPIKey
+	}
+	if err := db.Create(&settings).Error; err != nil {
+		t.Fatalf("create settings: %v", err)
+	}
+	return settings
+}
+
+func failGatewayAdminUpdates(db *gorm.DB, message string) {
+	db.Callback().Update().Before("gorm:update").Register("test_fail_gateway_admin_update", func(tx *gorm.DB) {
+		tx.AddError(errors.New(message))
+	})
+}
+
+func failGatewayAdminQueries(db *gorm.DB, message string) {
+	db.Callback().Query().Before("gorm:query").Register("test_fail_gateway_admin_query", func(tx *gorm.DB) {
+		tx.AddError(errors.New(message))
+	})
+}
+
+func failGatewayAdminQueriesAfter(db *gorm.DB, allowed int, message string) {
+	count := 0
+	db.Callback().Query().Before("gorm:query").Register("test_fail_gateway_admin_query_after", func(tx *gorm.DB) {
+		count++
+		if count > allowed {
+			tx.AddError(errors.New(message))
+		}
+	})
+}
+
+func failGatewayAdminSiteQueries(db *gorm.DB, message string) {
+	db.Callback().Query().Before("gorm:query").Register("test_fail_gateway_admin_site_query", func(tx *gorm.DB) {
+		if tx.Statement.Table == "sites" {
+			tx.AddError(errors.New(message))
+		}
+	})
+}
+
+func TestUpdateGatewaySettingsRejectsInvalidJSON(t *testing.T) {
+	db := newGatewayAdminTestDB(t)
+	seedGatewayAdminSettings(t, db, models.SystemSetting{})
+	app := &App{DB: db}
+
+	rec := httptest.NewRecorder()
+	app.UpdateGatewaySettings(rec, httptest.NewRequest(http.MethodPut, "/settings", strings.NewReader("{bad-json")))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d body = %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestUpdateGatewaySettingsRejectsInvalidEnums(t *testing.T) {
+	db := newGatewayAdminTestDB(t)
+	seedGatewayAdminSettings(t, db, models.SystemSetting{})
+	app := &App{DB: db}
+	body := `{"route_strategy":"bad","failure_retry_mode":"all"}`
+
+	rec := httptest.NewRecorder()
+	app.UpdateGatewaySettings(rec, httptest.NewRequest(http.MethodPut, "/settings", strings.NewReader(body)))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d body = %s", rec.Code, rec.Body.String())
+	}
+
+	var stored models.SystemSetting
+	if err := db.First(&stored, 1).Error; err != nil {
+		t.Fatalf("reload settings: %v", err)
+	}
+	if stored.GatewayRouteStrategy != "round_robin" {
+		t.Fatalf("route strategy persisted invalid update: %q", stored.GatewayRouteStrategy)
+	}
+}
+
+func TestUpdateGatewaySettingsRejectsOutOfRangeRuntimeValues(t *testing.T) {
+	cases := []struct {
+		name string
+		body string
+	}{
+		{name: "failure threshold low", body: `{"failure_threshold":0}`},
+		{name: "failure threshold high", body: `{"failure_threshold":21}`},
+		{name: "cooldown low", body: `{"cooldown_seconds":9}`},
+		{name: "cooldown high", body: `{"cooldown_seconds":3601}`},
+		{name: "timeout low", body: `{"request_timeout":4}`},
+		{name: "timeout high", body: `{"request_timeout":181}`},
+		{name: "max attempts low", body: `{"max_attempts":-1}`},
+		{name: "max attempts high", body: `{"max_attempts":51}`},
+		{name: "concurrency low", body: `{"route_concurrency_limit":-1}`},
+		{name: "concurrency high", body: `{"route_concurrency_limit":1001}`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			db := newGatewayAdminTestDB(t)
+			seedGatewayAdminSettings(t, db, models.SystemSetting{})
+			app := &App{DB: db}
+
+			rec := httptest.NewRecorder()
+			app.UpdateGatewaySettings(rec, httptest.NewRequest(http.MethodPut, "/settings", strings.NewReader(tc.body)))
+			if rec.Code != http.StatusBadRequest {
+				t.Fatalf("status = %d body = %s", rec.Code, rec.Body.String())
+			}
+			var stored models.SystemSetting
+			if err := db.First(&stored, 1).Error; err != nil {
+				t.Fatalf("reload settings: %v", err)
+			}
+			if stored.GatewayFailureThreshold != 3 || stored.GatewayCooldownSeconds != 180 ||
+				stored.GatewayRequestTimeout != 60 || stored.GatewayMaxAttempts != 0 ||
+				stored.GatewayRouteConcurrencyLimit != 5 {
+				t.Fatalf("out-of-range value was persisted: %+v", stored)
+			}
+		})
+	}
+}
+
+func TestUpdateGatewaySettingsPreservesGatewayAPIKeyCase(t *testing.T) {
+	db := newGatewayAdminTestDB(t)
+	seedGatewayAdminSettings(t, db, models.SystemSetting{})
+	app := &App{DB: db}
+	body := `{"gateway_api_key":"Sk-Live-MixedCase"}`
+
+	rec := httptest.NewRecorder()
+	app.UpdateGatewaySettings(rec, httptest.NewRequest(http.MethodPut, "/settings", strings.NewReader(body)))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d body = %s", rec.Code, rec.Body.String())
+	}
+
+	var stored models.SystemSetting
+	if err := db.First(&stored, 1).Error; err != nil {
+		t.Fatalf("reload settings: %v", err)
+	}
+	if stored.GatewayAPIKey != "Sk-Live-MixedCase" {
+		t.Fatalf("gateway api key = %q", stored.GatewayAPIKey)
+	}
+}
+
+func TestGetGatewaySettingsUsesDefaultsWhenSettingsRowIsMissing(t *testing.T) {
+	db := newGatewayAdminTestDB(t)
+	app := &App{DB: db}
+
+	rec := httptest.NewRecorder()
+	app.GetGatewaySettings(rec, httptest.NewRequest(http.MethodGet, "/settings", nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d body = %s", rec.Code, rec.Body.String())
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if payload["route_strategy"] != "round_robin" || payload["request_timeout"] != float64(60) {
+		t.Fatalf("gateway settings defaults = %#v", payload)
+	}
+	if payload["concurrency_transfer_strategy"] != "limit_only" || payload["concurrency_overflow_strategy"] != "latency_first" {
+		t.Fatalf("gateway concurrency defaults = %#v", payload)
+	}
+}
+
+func TestGetGatewaySettingsReturnsQueryError(t *testing.T) {
+	db := newGatewayAdminTestDB(t)
+	seedGatewayAdminSettings(t, db, models.SystemSetting{})
+	failGatewayAdminQueries(db, "settings read failed")
+	app := &App{DB: db}
+
+	rec := httptest.NewRecorder()
+	app.GetGatewaySettings(rec, httptest.NewRequest(http.MethodGet, "/settings", nil))
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d body = %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestGatewayOverviewNormalizesEmptyStrategySettings(t *testing.T) {
+	db := newGatewayAdminTestDB(t)
+	if err := db.Create(&models.SystemSetting{ID: 1}).Error; err != nil {
+		t.Fatalf("create settings: %v", err)
+	}
+	app := &App{DB: db}
+
+	rec := httptest.NewRecorder()
+	app.GatewayOverview(rec, httptest.NewRequest(http.MethodGet, "/gateway-admin/overview", nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d body = %s", rec.Code, rec.Body.String())
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if payload["route_strategy"] != "round_robin" {
+		t.Fatalf("route_strategy = %#v", payload["route_strategy"])
+	}
+	if payload["concurrency_overflow_strategy"] != "latency_first" {
+		t.Fatalf("concurrency_overflow_strategy = %#v", payload["concurrency_overflow_strategy"])
+	}
+}
+
+func TestUpdateGatewaySettingsUsesDefaultsWhenSettingsRowIsMissing(t *testing.T) {
+	db := newGatewayAdminTestDB(t)
+	app := &App{DB: db}
+	body := `{"gateway_api_key":"Sk-Live-MixedCase"}`
+
+	rec := httptest.NewRecorder()
+	app.UpdateGatewaySettings(rec, httptest.NewRequest(http.MethodPut, "/settings", strings.NewReader(body)))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d body = %s", rec.Code, rec.Body.String())
+	}
+
+	var stored models.SystemSetting
+	if err := db.First(&stored, 1).Error; err != nil {
+		t.Fatalf("reload settings: %v", err)
+	}
+	if stored.GatewayAPIKey != "Sk-Live-MixedCase" {
+		t.Fatalf("gateway api key = %q", stored.GatewayAPIKey)
+	}
+	if stored.GatewayRouteStrategy != "round_robin" || stored.GatewayRequestTimeout != 60 {
+		t.Fatalf("gateway defaults not preserved: strategy=%q timeout=%d", stored.GatewayRouteStrategy, stored.GatewayRequestTimeout)
+	}
+	if stored.GatewayConcurrencyTransferStrategy != "limit_only" || stored.GatewayConcurrencyOverflowStrategy != "latency_first" {
+		t.Fatalf("concurrency defaults not preserved: transfer=%q overflow=%q", stored.GatewayConcurrencyTransferStrategy, stored.GatewayConcurrencyOverflowStrategy)
+	}
+}
+
+func TestUpdateGatewaySettingsReturnsSaveError(t *testing.T) {
+	db := newGatewayAdminTestDB(t)
+	seedGatewayAdminSettings(t, db, models.SystemSetting{})
+	failGatewayAdminUpdates(db, "settings write failed")
+	app := &App{DB: db}
+
+	rec := httptest.NewRecorder()
+	app.UpdateGatewaySettings(rec, httptest.NewRequest(http.MethodPut, "/settings", strings.NewReader(`{"route_strategy":"smart"}`)))
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d body = %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestResetGatewayCircuitReturnsSaveError(t *testing.T) {
+	db := newGatewayAdminTestDB(t)
+	route := models.GatewayRouteState{CircuitState: "open", ConsecutiveFailures: 3}
+	if err := db.Create(&route).Error; err != nil {
+		t.Fatalf("create route: %v", err)
+	}
+	failGatewayAdminUpdates(db, "route write failed")
+	app := &App{DB: db}
+	router := chi.NewRouter()
+	router.Post("/routes/{routeID}/reset-circuit", app.ResetGatewayCircuit)
+
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, fmt.Sprintf("/routes/%d/reset-circuit", route.ID), nil))
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d body = %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestProbeGatewayRoutesRejectsInvalidJSON(t *testing.T) {
+	db := newGatewayAdminTestDB(t)
+	seedGatewayAdminSettings(t, db, models.SystemSetting{})
+	app := &App{DB: db}
+
+	rec := httptest.NewRecorder()
+	app.ProbeGatewayRoutes(rec, httptest.NewRequest(http.MethodPost, "/routes/probe", strings.NewReader("{bad-json")))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d body = %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestProbeGatewayRoutesReturnsFailedItems(t *testing.T) {
+	db := newGatewayAdminTestDB(t)
+	seedGatewayAdminSettings(t, db, models.SystemSetting{})
+	app := &App{DB: db}
+
+	rec := httptest.NewRecorder()
+	app.ProbeGatewayRoutes(rec, httptest.NewRequest(http.MethodPost, "/routes/probe", strings.NewReader(`{"route_ids":[999]}`)))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d body = %s", rec.Code, rec.Body.String())
+	}
+	var response []map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &response); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if len(response) != 1 || response[0]["id"] != float64(999) || response[0]["ok"] != false {
+		t.Fatalf("response = %#v", response)
+	}
+	if response[0]["message"] == "" {
+		t.Fatalf("message is empty: %#v", response[0])
+	}
+}
+
 func TestGatewayTotalBalanceUsesEnabledRouteUnits(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open("file:gateway-total-balance?mode=memory&cache=shared"), &gorm.Config{})
 	if err != nil {
@@ -192,6 +517,94 @@ func TestUpdateGatewayRouteTypePersistsManualRequestBaseURLs(t *testing.T) {
 	}
 }
 
+func TestUpdateGatewayRouteTypeRefreshesSiblingRouteSnapshots(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open("file:gateway-route-type-refresh-siblings?mode=memory&cache=shared"), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	if err := db.AutoMigrate(models.All()...); err != nil {
+		t.Fatalf("auto migrate: %v", err)
+	}
+	site := models.Site{
+		Name:      "refresh-site",
+		BaseURL:   "https://site.example",
+		PluginKey: "api-supplier",
+		IsEnabled: true,
+		Credentials: models.JSONMap{
+			"api_keys": []any{
+				map[string]any{"name": "first", "key": "first-secret", "status": "active"},
+				map[string]any{"name": "second", "key": "second-secret", "status": "active"},
+			},
+		},
+	}
+	if err := db.Create(&site).Error; err != nil {
+		t.Fatalf("create site: %v", err)
+	}
+	first := models.GatewayRouteState{
+		SiteID:              site.ID,
+		KeyFingerprint:      testGatewayRouteFingerprint("first-secret"),
+		RouteType:           "codex",
+		SiteNameSnapshot:    site.Name,
+		SiteBaseURLSnapshot: site.BaseURL,
+		SiteAPIURLSnapshot:  `["https://old-first.example/v1"]`,
+		LastRequestBaseURL:  "https://old-first.example/v1",
+		IsEnabled:           true,
+		CircuitState:        "closed",
+	}
+	second := models.GatewayRouteState{
+		SiteID:              site.ID,
+		KeyFingerprint:      testGatewayRouteFingerprint("second-secret"),
+		RouteType:           "codex",
+		SiteNameSnapshot:    site.Name,
+		SiteBaseURLSnapshot: site.BaseURL,
+		SiteAPIURLSnapshot:  `["https://old-second.example/v1"]`,
+		LastRequestBaseURL:  "https://old-second.example/v1",
+		IsEnabled:           true,
+		CircuitState:        "closed",
+	}
+	if err := db.Create(&first).Error; err != nil {
+		t.Fatalf("create first route: %v", err)
+	}
+	if err := db.Create(&second).Error; err != nil {
+		t.Fatalf("create second route: %v", err)
+	}
+
+	body, _ := json.Marshal(map[string]any{
+		"route_type":               "codex",
+		"manual_request_base_urls": []string{"https://first-new.example/v1"},
+	})
+	app := &App{DB: db}
+	router := chi.NewRouter()
+	router.Patch("/routes/{routeID}/type", app.UpdateGatewayRouteType)
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, httptest.NewRequest(http.MethodPatch, "/routes/1/type", bytes.NewReader(body)))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("update status = %d body = %s", rec.Code, rec.Body.String())
+	}
+
+	var storedSite models.Site
+	if err := db.First(&storedSite, site.ID).Error; err != nil {
+		t.Fatalf("reload site: %v", err)
+	}
+	var storedFirst models.GatewayRouteState
+	if err := db.Preload("Site").First(&storedFirst, first.ID).Error; err != nil {
+		t.Fatalf("reload first route: %v", err)
+	}
+	if got := services.GatewayRouteRequestBaseCandidates(storedFirst, storedSite); len(got) != 1 || got[0] != "https://first-new.example/v1" {
+		t.Fatalf("first route candidates = %v", got)
+	}
+	var storedSecond models.GatewayRouteState
+	if err := db.Preload("Site").First(&storedSecond, second.ID).Error; err != nil {
+		t.Fatalf("reload second route: %v", err)
+	}
+	if got := services.GatewayRouteRequestBaseCandidates(storedSecond, storedSite); len(got) != 1 || got[0] != "https://site.example" {
+		t.Fatalf("second route candidates = %v", got)
+	}
+	if storedSecond.LastRequestBaseURL != "" {
+		t.Fatalf("second last request base url = %q", storedSecond.LastRequestBaseURL)
+	}
+}
+
 func TestUpdateGatewayRouteTypeResponseKeepsAPIKeyStatus(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open("file:gateway-route-path-keeps-key?mode=memory&cache=shared"), &gorm.Config{})
 	if err != nil {
@@ -347,6 +760,92 @@ func TestGatewayRouteGroupManagementAssignsRouteToMultipleGroups(t *testing.T) {
 	}
 }
 
+func TestGatewayRouteGroupResponseDoesNotExposeAPIKey(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open("file:gateway-route-group-secret-response?mode=memory&cache=shared"), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	if err := db.AutoMigrate(models.All()...); err != nil {
+		t.Fatalf("auto migrate: %v", err)
+	}
+
+	app := &App{DB: db}
+	router := chi.NewRouter()
+	router.Post("/route-groups", app.CreateGatewayRouteGroup)
+	router.Get("/route-groups", app.GatewayRouteGroups)
+	router.Put("/route-groups/{groupID}", app.UpdateGatewayRouteGroup)
+
+	createBody, _ := json.Marshal(map[string]any{"name": "secure", "api_key": "group-secret"})
+	createRec := httptest.NewRecorder()
+	router.ServeHTTP(createRec, httptest.NewRequest(http.MethodPost, "/route-groups", bytes.NewReader(createBody)))
+	if createRec.Code != http.StatusCreated {
+		t.Fatalf("create status = %d body = %s", createRec.Code, createRec.Body.String())
+	}
+	var created map[string]any
+	if err := json.Unmarshal(createRec.Body.Bytes(), &created); err != nil {
+		t.Fatalf("decode create response: %v", err)
+	}
+	assertRouteGroupKeyHidden(t, created)
+
+	groupID := uint(created["id"].(float64))
+	updateBody, _ := json.Marshal(map[string]any{"name": "secure-renamed"})
+	updateRec := httptest.NewRecorder()
+	router.ServeHTTP(updateRec, httptest.NewRequest(http.MethodPut, fmt.Sprintf("/route-groups/%d", groupID), bytes.NewReader(updateBody)))
+	if updateRec.Code != http.StatusOK {
+		t.Fatalf("update status = %d body = %s", updateRec.Code, updateRec.Body.String())
+	}
+	var updated map[string]any
+	if err := json.Unmarshal(updateRec.Body.Bytes(), &updated); err != nil {
+		t.Fatalf("decode update response: %v", err)
+	}
+	assertRouteGroupKeyHidden(t, updated)
+
+	var stored models.GatewayRouteGroup
+	if err := db.First(&stored, groupID).Error; err != nil {
+		t.Fatalf("load stored group: %v", err)
+	}
+	if stored.APIKey != "group-secret" {
+		t.Fatalf("stored APIKey changed after keyless update: %q", stored.APIKey)
+	}
+
+	listRec := httptest.NewRecorder()
+	router.ServeHTTP(listRec, httptest.NewRequest(http.MethodGet, "/route-groups", nil))
+	if listRec.Code != http.StatusOK {
+		t.Fatalf("list status = %d body = %s", listRec.Code, listRec.Body.String())
+	}
+	var listed []map[string]any
+	if err := json.Unmarshal(listRec.Body.Bytes(), &listed); err != nil {
+		t.Fatalf("decode list response: %v", err)
+	}
+	if len(listed) != 1 {
+		t.Fatalf("listed len = %d body = %s", len(listed), listRec.Body.String())
+	}
+	assertRouteGroupKeyHidden(t, listed[0])
+
+	clearBody, _ := json.Marshal(map[string]any{"name": "secure-renamed", "clear_api_key": true})
+	clearRec := httptest.NewRecorder()
+	router.ServeHTTP(clearRec, httptest.NewRequest(http.MethodPut, fmt.Sprintf("/route-groups/%d", groupID), bytes.NewReader(clearBody)))
+	if clearRec.Code != http.StatusOK {
+		t.Fatalf("clear status = %d body = %s", clearRec.Code, clearRec.Body.String())
+	}
+	if err := db.First(&stored, groupID).Error; err != nil {
+		t.Fatalf("reload stored group: %v", err)
+	}
+	if stored.APIKey != "" {
+		t.Fatalf("stored APIKey after clear = %q", stored.APIKey)
+	}
+}
+
+func assertRouteGroupKeyHidden(t *testing.T, payload map[string]any) {
+	t.Helper()
+	if _, ok := payload["api_key"]; ok {
+		t.Fatalf("route group response exposed api_key: %#v", payload)
+	}
+	if payload["has_api_key"] != true {
+		t.Fatalf("has_api_key = %v", payload["has_api_key"])
+	}
+}
+
 func TestDeleteGatewayRouteRemovesMatchingSiteAPIKeyAndGroupMembership(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open("file:gateway-route-delete-api-key?mode=memory&cache=shared"), &gorm.Config{})
 	if err != nil {
@@ -422,6 +921,9 @@ func TestDeleteGatewayRouteRemovesMatchingSiteAPIKeyAndGroupMembership(t *testin
 	if response["removed_api_key"] != true {
 		t.Fatalf("removed_api_key = %v", response["removed_api_key"])
 	}
+	if response["message"] != "路由已删除，对应站点 API Key 已移除。" {
+		t.Fatalf("message = %v", response["message"])
+	}
 
 	var deleted models.GatewayRouteState
 	if err := db.First(&deleted, route.ID).Error; !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -456,6 +958,87 @@ func TestDeleteGatewayRouteRemovesMatchingSiteAPIKeyAndGroupMembership(t *testin
 	}
 	if kept["key"] != "keep-secret" {
 		t.Fatalf("remaining api key = %#v", kept)
+	}
+}
+
+func TestDeleteGatewayRouteKeepsAPIKeySharedByAnotherRoute(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open("file:gateway-route-delete-shared-api-key?mode=memory&cache=shared"), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	if err := db.AutoMigrate(models.All()...); err != nil {
+		t.Fatalf("auto migrate: %v", err)
+	}
+	site := models.Site{
+		Name:      "shared-key-site",
+		BaseURL:   "https://shared-route.example",
+		PluginKey: "api-supplier",
+		IsEnabled: true,
+		Credentials: models.JSONMap{
+			"api_keys": []any{
+				map[string]any{
+					"name":              "shared-gpt",
+					"key":               "shared-secret",
+					"status":            "active",
+					"route_type":        "gpt",
+					"request_base_urls": []any{"https://gpt.example/v1"},
+				},
+				map[string]any{
+					"name":              "shared-codex",
+					"key":               "shared-secret",
+					"status":            "active",
+					"route_type":        "codex",
+					"request_base_urls": []any{"https://codex.example/v1"},
+				},
+			},
+		},
+	}
+	if err := db.Create(&site).Error; err != nil {
+		t.Fatalf("create site: %v", err)
+	}
+	if count, err := services.SyncGatewayRoutes(db); err != nil || count != 2 {
+		t.Fatalf("sync route count = %d err = %v", count, err)
+	}
+	var routes []models.GatewayRouteState
+	if err := db.Where("site_id = ?", site.ID).Order("route_type asc").Find(&routes).Error; err != nil {
+		t.Fatalf("load routes: %v", err)
+	}
+	if len(routes) != 2 {
+		t.Fatalf("route len = %d", len(routes))
+	}
+
+	app := &App{DB: db}
+	router := chi.NewRouter()
+	router.Delete("/routes/{routeID}", app.DeleteGatewayRoute)
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, httptest.NewRequest(http.MethodDelete, fmt.Sprintf("/routes/%d", routes[0].ID), nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("delete status = %d body = %s", rec.Code, rec.Body.String())
+	}
+	var response map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &response); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if response["removed_api_key"] != false {
+		t.Fatalf("removed_api_key = %v", response["removed_api_key"])
+	}
+	if response["message"] != "路由已删除，对应站点 API Key 已保留。" {
+		t.Fatalf("message = %v", response["message"])
+	}
+	var storedSite models.Site
+	if err := db.First(&storedSite, site.ID).Error; err != nil {
+		t.Fatalf("reload site: %v", err)
+	}
+	apiKeys, ok := storedSite.Credentials["api_keys"].([]any)
+	if !ok || len(apiKeys) != 2 {
+		t.Fatalf("api_keys = %#v", storedSite.Credentials["api_keys"])
+	}
+	var remaining models.GatewayRouteState
+	if err := db.Preload("Site").First(&remaining, routes[1].ID).Error; err != nil {
+		t.Fatalf("remaining route missing: %v", err)
+	}
+	if services.GatewayRouteAPIKeyForState(remaining) != "shared-secret" {
+		t.Fatalf("remaining route api key = %q", services.GatewayRouteAPIKeyForState(remaining))
 	}
 }
 
@@ -686,7 +1269,10 @@ func TestGatewayLogResponseIncludesUserAgent(t *testing.T) {
 		},
 	}
 
-	response := app.gatewayLogResponse(logs)
+	response, err := app.gatewayLogResponse(logs)
+	if err != nil {
+		t.Fatalf("log response: %v", err)
+	}
 	if len(response) != 1 {
 		t.Fatalf("response length = %d", len(response))
 	}
@@ -785,6 +1371,126 @@ func TestGatewayLogsFilterByStatus(t *testing.T) {
 	}
 }
 
+func TestGatewayLogsReturnsRelatedLookupError(t *testing.T) {
+	db := newGatewayAdminTestDB(t)
+	site := models.Site{Name: "lookup-fail-site", BaseURL: "https://lookup-fail.example", PluginKey: "api-supplier", IsEnabled: true}
+	if err := db.Create(&site).Error; err != nil {
+		t.Fatalf("create site: %v", err)
+	}
+	route := models.GatewayRouteState{
+		SiteID:         site.ID,
+		KeyFingerprint: "lookup-fail-key",
+		KeyName:        "lookup-fail",
+		RouteType:      "codex",
+		IsEnabled:      true,
+		CircuitState:   "closed",
+	}
+	if err := db.Create(&route).Error; err != nil {
+		t.Fatalf("create route: %v", err)
+	}
+	if err := db.Create(&models.GatewayRequestLog{
+		RequestID:      "lookup-fail",
+		RouteStateID:   &route.ID,
+		SiteID:         &site.ID,
+		KeyFingerprint: route.KeyFingerprint,
+		KeyName:        route.KeyName,
+		CreatedAt:      time.Now().UTC(),
+	}).Error; err != nil {
+		t.Fatalf("create log: %v", err)
+	}
+	failGatewayAdminQueriesAfter(db, 1, "related log lookup failed")
+	app := &App{DB: db}
+
+	rec := httptest.NewRecorder()
+	app.GatewayLogs(rec, httptest.NewRequest(http.MethodGet, "/gateway-admin/logs", nil))
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d body = %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestGatewayLogsReturnsRouteLookupError(t *testing.T) {
+	db := newGatewayAdminTestDB(t)
+	site := models.Site{Name: "route-lookup-fail-site", BaseURL: "https://route-lookup-fail.example", PluginKey: "api-supplier", IsEnabled: true}
+	if err := db.Create(&site).Error; err != nil {
+		t.Fatalf("create site: %v", err)
+	}
+	route := models.GatewayRouteState{
+		SiteID:         site.ID,
+		KeyFingerprint: "route-lookup-fail-key",
+		KeyName:        "route-lookup-fail",
+		RouteType:      "codex",
+		IsEnabled:      true,
+		CircuitState:   "closed",
+	}
+	if err := db.Create(&route).Error; err != nil {
+		t.Fatalf("create route: %v", err)
+	}
+	if err := db.Create(&models.GatewayRequestLog{
+		RequestID:      "route-lookup-fail",
+		RouteStateID:   &route.ID,
+		SiteID:         &site.ID,
+		KeyFingerprint: route.KeyFingerprint,
+		KeyName:        route.KeyName,
+		CreatedAt:      time.Now().UTC(),
+	}).Error; err != nil {
+		t.Fatalf("create log: %v", err)
+	}
+	failGatewayAdminQueriesAfter(db, 2, "route lookup failed")
+	app := &App{DB: db}
+
+	rec := httptest.NewRecorder()
+	app.GatewayLogs(rec, httptest.NewRequest(http.MethodGet, "/gateway-admin/logs", nil))
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d body = %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestGatewayUsageReturnsRouteLookupError(t *testing.T) {
+	db := newGatewayAdminTestDB(t)
+	seedGatewayAdminSettings(t, db, models.SystemSetting{})
+	siteID := uint(9)
+	routeID := uint(7)
+	if err := db.Create(&models.GatewayRequestLog{
+		RouteStateID:   &routeID,
+		SiteID:         &siteID,
+		KeyFingerprint: "usage-lookup-fail",
+		RequestedModel: "gpt-5.1",
+		CreatedAt:      time.Now().UTC(),
+	}).Error; err != nil {
+		t.Fatalf("create log: %v", err)
+	}
+	failGatewayAdminQueriesAfter(db, 2, "route lookup failed")
+	app := &App{DB: db}
+
+	rec := httptest.NewRecorder()
+	app.GatewayUsage(rec, httptest.NewRequest(http.MethodGet, "/gateway-admin/usage", nil))
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d body = %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestGatewayUsageReturnsSiteLookupError(t *testing.T) {
+	db := newGatewayAdminTestDB(t)
+	seedGatewayAdminSettings(t, db, models.SystemSetting{})
+	siteID := uint(11)
+	if err := db.Create(&models.GatewayRequestLog{
+		SiteID:         &siteID,
+		KeyFingerprint: "site-lookup-fail",
+		RequestedModel: "gpt-5.1",
+		CreatedAt:      time.Now().UTC(),
+	}).Error; err != nil {
+		t.Fatalf("create log: %v", err)
+	}
+	failGatewayAdminSiteQueries(db, "site lookup failed")
+	app := &App{DB: db}
+
+	rec := httptest.NewRecorder()
+	app.GatewayUsage(rec, httptest.NewRequest(http.MethodGet, "/gateway-admin/usage", nil))
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d body = %s", rec.Code, rec.Body.String())
+	}
+}
+
 func TestGatewayLogResponseIncludesFailureTransferChain(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open("file:gateway-log-transfer-chain?mode=memory&cache=shared"), &gorm.Config{})
 	if err != nil {
@@ -841,7 +1547,10 @@ func TestGatewayLogResponseIncludesFailureTransferChain(t *testing.T) {
 	}
 
 	app := &App{DB: db}
-	response := app.gatewayLogResponse([]models.GatewayRequestLog{logs[0]})
+	response, err := app.gatewayLogResponse([]models.GatewayRequestLog{logs[0]})
+	if err != nil {
+		t.Fatalf("log response: %v", err)
+	}
 	if len(response) != 1 {
 		t.Fatalf("response length = %d", len(response))
 	}
@@ -993,19 +1702,62 @@ func TestGatewayActiveRequestsIncludesPreviousFailureChain(t *testing.T) {
 	}
 }
 
+func TestGatewayActiveRequestResponseReturnsRelatedLookupError(t *testing.T) {
+	db := newGatewayAdminTestDB(t)
+	if err := db.Create(&models.GatewayRequestLog{
+		RequestID: "active-lookup-fail",
+		CreatedAt: time.Now().UTC(),
+	}).Error; err != nil {
+		t.Fatalf("create log: %v", err)
+	}
+	failGatewayAdminQueries(db, "active related lookup failed")
+	app := &App{DB: db}
+
+	_, err := app.gatewayActiveRequestResponse([]services.GatewayActiveRequest{
+		{
+			ID:        "active-lookup-fail",
+			RequestID: "active-lookup-fail",
+			StartedAt: time.Now().UTC(),
+		},
+	})
+	if err == nil {
+		t.Fatal("expected active related lookup error")
+	}
+}
+
 func TestGatewayAdminResponsesRedactHistoricalFailureSecrets(t *testing.T) {
 	secretReason := "failed token=history-secret cookie=session=history-secret"
 	status := http.StatusUnauthorized
 	app := &App{}
-	logResponse := app.gatewayLogResponse([]models.GatewayRequestLog{
+	activeResponse, err := app.gatewayActiveRequestResponse([]services.GatewayActiveRequest{
+		{
+			ID:         "active-secret-request",
+			RequestURL: "https://upstream.example/v1/chat/completions?debug=1&api_key=active-secret&token=active-token",
+			StartedAt:  time.Now().UTC(),
+		},
+	})
+	if err != nil {
+		t.Fatalf("active response: %v", err)
+	}
+	if len(activeResponse) != 1 {
+		t.Fatalf("active response length = %d", len(activeResponse))
+	}
+	if got := fmt.Sprint(activeResponse[0]["request_url"]); strings.Contains(got, "active-secret") || strings.Contains(got, "active-token") || !strings.Contains(got, "debug=1") {
+		t.Fatalf("active request_url redaction = %s", got)
+	}
+
+	logResponse, err := app.gatewayLogResponse([]models.GatewayRequestLog{
 		{
 			ID:            1,
-			RequestURL:    "https://upstream.example/v1/chat/completions?debug=1&api_key=history-secret&token=history-token",
+			RequestURL:    "https://upstream.example/v1/chat/completions?debug=1&apiKey=history-secret&accessToken=history-token",
 			StatusCode:    &status,
 			FailureReason: &secretReason,
 			CreatedAt:     time.Now().UTC(),
 		},
 	})
+	if err != nil {
+		t.Fatalf("log response: %v", err)
+	}
 	if len(logResponse) != 1 {
 		t.Fatalf("log response length = %d", len(logResponse))
 	}

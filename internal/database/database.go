@@ -61,21 +61,31 @@ func NormalizeAdminUsers(db *gorm.DB) error {
 	if len(admins) == 0 {
 		return nil
 	}
-	hasSuperAdmin := false
+	hasEnabledSuperAdmin := false
 	for _, admin := range admins {
-		if admin.Role == models.AdminRoleSuper {
-			hasSuperAdmin = true
+		if admin.Role == models.AdminRoleSuper && admin.IsEnabled {
+			hasEnabledSuperAdmin = true
 			break
 		}
 	}
-	for idx, admin := range admins {
+	promoteID := uint(0)
+	if !hasEnabledSuperAdmin {
+		promoteID = firstEnabledAdminID(admins)
+		if promoteID == 0 {
+			promoteID = admins[0].ID
+		}
+	}
+	for _, admin := range admins {
 		updates := map[string]any{}
 		role := models.NormalizeAdminRole(admin.Role)
-		if !hasSuperAdmin && idx == 0 {
+		if promoteID != 0 && admin.ID == promoteID {
 			role = models.AdminRoleSuper
 		}
 		if admin.Role != role {
 			updates["role"] = role
+		}
+		if promoteID != 0 && admin.ID == promoteID && !admin.IsEnabled {
+			updates["is_enabled"] = true
 		}
 		if len(updates) > 0 {
 			if err := db.Model(&models.AdminUser{}).Where("id = ?", admin.ID).Updates(updates).Error; err != nil {
@@ -84,6 +94,15 @@ func NormalizeAdminUsers(db *gorm.DB) error {
 		}
 	}
 	return nil
+}
+
+func firstEnabledAdminID(admins []models.AdminUser) uint {
+	for _, admin := range admins {
+		if admin.IsEnabled {
+			return admin.ID
+		}
+	}
+	return 0
 }
 
 func Close(db *gorm.DB) error {

@@ -278,7 +278,7 @@ FRONTEND_PORT=9912 BACKEND_PORT=8001 ./run.sh
 - 用户名：`admin`
 - 密码：`admin123`
 
-> **⚠️ 必改**：登录后立即在 `设置 → 账号与密码` 修改。也可以在第一次启动前用 `DEFAULT_ADMIN_PASSWORD` 环境变量覆盖。
+> **必改**：登录后立即在 `设置 → 账号与密码` 修改。也可以在第一次启动前用 `DEFAULT_ADMIN_PASSWORD` 环境变量覆盖。
 
 ### 开发数据库位置
 
@@ -384,13 +384,16 @@ gh auth login
 
 ```bash
 # 后端单元测试
-go test ./...
+go test -timeout=60s ./...
 
 # 静态检查
 go vet ./...
 
+# 前端状态和静态契约测试
+(cd frontend && npm test)
+
 # 前端类型检查（build 已包含）
-cd frontend && npx vue-tsc -b
+(cd frontend && npx vue-tsc -b)
 ```
 
 测试当前覆盖：
@@ -401,6 +404,9 @@ cd frontend && npx vue-tsc -b
 - `internal/plugins/invite_test.go` — 邀请链接拼接规则
 - `internal/handlers/*_test.go` — 签到参与、公开邀请码、站点刷新和浏览器存储解析
 - `internal/services/gateway_service_test.go` — 网关调度核心
+- `frontend/tests/*.test.ts` — 前端状态模型、页面装配边界和视觉契约静态测试
+
+`frontend/tests/switchVisualContract.test.ts` 会静态检查 Ant Design Switch 的共享 `app-switch` 样式、可访问名称、输入框和站点编辑器布局等视觉契约。修改共享样式、站点编辑器、页头或侧边栏时，必须与 `npm test` 一起运行。
 
 新增功能优先按影响面补测试：插件逻辑放 `internal/plugins`，HTTP 行为放 `internal/handlers`，网关调度放 `internal/services`。
 
@@ -466,6 +472,14 @@ cd frontend && npx vue-tsc -b
 - 实体定义：`internal/models/models.go`
 - 启动时 `internal/migrations/migrations.go` 跑轻量 `AutoMigrate` + 手动补列
 - JSON 字段：`internal/models/json.go` 提供 `JSONMap` 类型，支持 `driver.Valuer/Scanner`，DB 里以字符串存
+
+运行时数据库切换和导入使用同一套迁移口径：
+
+- HTTP 路由通过 `handlers.App` 持有当前 `DB`，认证中间件、设置接口和后台任务都读取运行时 `App.DB`。
+- 导入或切换 SQLite 数据库后，必须执行 `migrations.Apply`、`database.NormalizeAdminUsers` 和 `seed.EnsureSystemSettings`，再替换 `App.DB`。
+- 旧库迁移必须补齐核心运行表、缺失列、索引和 `site_queue_tasks` 表；依赖旧 schema 的改动要补离线迁移测试。
+- 定时签到按当前 `App.DB` 读取设置和站点；数据库备份、日志清理按运行时数据库路径 provider 读取当前 SQLite 路径。
+- 管理员归一化必须保证至少存在一个启用的 super admin；已有禁用 super admin 时，不应阻止启用账号被提升。
 
 切换到 PostgreSQL / MySQL：
 

@@ -1,0 +1,250 @@
+.page-toolbar,
+.route-pool-filters,
+.route-pool-searchbar,
+.sites-list-toolbar,
+.desktop-console .desktop-topbar,
+.service-line,
+.section-heading {
+  gap: var(--rhythm-2) !important;
+}
+
+.route-pool-filters,
+.sites-list-toolbar {
+  align-items: center !important;
+  padding: var(--table-filter-gutter) !important;
+  border-bottom: 1px solid var(--border-muted) !important;
+  background: var(--bg-panel) !important;
+}
+
+.route-pool-filters {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.route-pool-type-tabs {
+  display: grid !important;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
+  gap: var(--rhythm-1) !important;
+  align-items: center;
+  justify-content: start;
+}
+
+.route-pool-type-tabs .ant-btn {
+  width: auto;
+  min-width: 66px;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+}
+
+.route-pool-searchbar {
+  display: grid !important;
+  grid-template-columns: minmax(240px, 1.15fr) minmax(200px, 0.9fr) minmax(150px, 0.65fr) minmax(104px, max-content) max-content;
+  align-items: center;
+  justify-content: stretch !important;
+  min-width: 0;
+}
+
+.route-pool-filter,
+.route-pool-filter--search,
+.route-pool-filter--group,
+.route-pool-filter--compact {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  flex: 1 1 auto !important;
+}
+
+.route-pool-switch-field {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+  height: var(--control-height);
+}
+
+.route-pool-switch-field > span {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 18px;
+  white-space: nowrap;
+}
+
+.route-pool-filter-switch.ant-switch {
+  flex: 0 0 auto;
+  width: auto !important;
+  max-width: none !important;
+  justify-self: end;
+}
+
+.route-pool-clear.ant-btn {
+  width: auto !important;
+  min-width: 82px !important;
+  justify-self: end;
+}
+
+.gateway-route-page .route-pool-card--standalone,
+.gateway-route-page.gateway-route-page .route-pool-card--standalone.ant-card,
+.sites-page .sites-stat-card.ant-card,
+.sites-page.sites-page .sites-stat-card.ant-card {
+  border-radius: var(--radius-container) !important;
+  background: var(--bg-panel) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+.gateway-route-page .route-pool-card--standalone .ant-card-head,
+.gateway-route-page.gateway-route-page .route-pool-card--standalone .ant-card-head {
+  min-height: var(--rhythm-5) !important;
+  padding-inline: var(--rhythm-3) !important;
+  background: var(--bg-panel) !important;
+}
+
+.gateway-route-page .route-pool-card--standalone .ant-card-head-title,
+.gateway-route-page.gateway-route-page .route-pool-card--standalone .ant-card-head-title {
+  padding-block: var(--rhythm-2) !important;
+  color: var(--text-main) !important;
+  font-size: 14px !important;
+  line-height: 1.35 !important;
+}
+
+.gateway-route-page .route-pool-card--standalone .ant-card-body,
+.gateway-route-page.gateway-route-page .route-pool-card--standalone .ant-card-body {
+  border-radius: 0 !important;
+}
+
+.gateway-route-page.gateway-route-page .route-pool-filter .ant-input,
+.gateway-route-page.gateway-route-page .route-pool-filter .ant-input-affix-wrapper,
+.gateway-route-page.gateway-route-page .route-pool-filter .ant-select-selector,
+.sites-page.sites-page .sites-list-toolbar__search .ant-input,
+.sites-page.sites-page .sites-list-toolbar__search .ant-input-affix-wrapper {
+  height: var(--control-height) !important;
+  min-height: var(--control-height) !important;
+  border-radius: var(--radius-control) !important;
+}
+
+.gateway-route-page.gateway-route-page .route-pool-filter .ant-input-affix-wrapper .ant-input,
+.sites-page.sites-page .sites-list-toolbar__search .ant-input-affix-wrapper .ant-input {
+  height: auto !important;
+  min-height: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  line-height: 1.4 !important;
+}
+
+.sites-list-toolbar {
+  display: grid !important;
+  grid-template-columns: minmax(220px, 1fr) auto auto auto auto;
+  flex-wrap: nowrap !important;
+}
+
+.sites-list-toolbar__search {
+  width: 100% !important;
+  min-width: 0;
+}
+
+.sites-list-toolbar__meta {
+  white-space: nowrap;
+}
+
+.table-fill--management {
+  border-top: 0 !important;
+  background: var(--bg-panel) !important;
+}
+
+.table-fill .ant-table-wrapper .ant-table,
+.table-fill .ant-table-wrapper .ant-table-container,
+.table-fill .ant-table-wrapper .ant-table-content,
+.table-fill .ant-table-wrapper .ant-table-body {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.table-fill .ant-table-wrapper .ant-table-content,
+.table-fill .ant-table-wrapper .ant-table-body {
+  overflow: auto !important;
+  overscroll-behavior: contain;
+}
+
+.table-fill .ant-table-wrapper .ant-table-thead > tr > th,
+.table-fill .ant-table-wrapper .ant-table-tbody > tr > td,
+.gateway-route-page .table-fill--management .ant-table-thead > tr > th,
+.gateway-route-page .table-fill--management .ant-table-tbody > tr > td,
+.sites-page .table-fill--management .ant-table-thead > tr > th,
+.sites-page .table-fill--management .ant-table-tbody > tr > td {
+  padding: 9px 12px !important;
+  background: var(--bg-panel) !important;
+  color: var(--text-main) !important;
+  font-size: 13px !important;
+  letter-spacing: 0 !important;
+}
+
+.table-fill .ant-table-wrapper .ant-table-thead > tr > th,
+.gateway-route-page .table-fill--management .ant-table-thead > tr > th,
+.sites-page .table-fill--management .ant-table-thead > tr > th {
+  height: 38px !important;
+  background: var(--bg-muted) !important;
+  color: var(--text-muted) !important;
+}
+
+.gateway-route-page .table-fill--management .ant-table-container,
+.sites-page .table-fill--management .ant-table-container {
+  border-radius: 0 !important;
+}
+
+.overview-metric-card__value,
+.gateway-metric-card__value,
+.sites-stat-card__value,
+.summary-tile strong {
+  font-size: 24px !important;
+  line-height: 1.15 !important;
+  letter-spacing: 0 !important;
+}
+
+.overview-page-head h2,
+.page-toolbar h2,
+.gateway-route-page .route-management-heading strong {
+  font-size: 21px !important;
+  line-height: 1.2 !important;
+  letter-spacing: 0 !important;
+}
+
+.desktop-console,
+.desktop-console .desktop-main,
+.desktop-console .desktop-topbar,
+.desktop-console .summary-tile,
+.desktop-console .service-strip,
+.desktop-console .desktop-alerts,
+.desktop-console .desktop-settings-section {
+  background-image: none !important;
+}
+
+.desktop-console .desktop-main {
+  width: min(1280px, 100%) !important;
+  gap: var(--rhythm-3) !important;
+}
+
+.desktop-console .summary-grid {
+  gap: var(--rhythm-2) !important;
+}
+
+.desktop-console .summary-tile {
+  min-height: 100px !important;
+  padding: var(--rhythm-3) !important;
+}
+
+.desktop-console .service-line {
+  min-height: var(--rhythm-5) !important;
+  padding: var(--rhythm-2) var(--rhythm-3) !important;
+}
+
+.settings-page .settings-tabs .ant-tabs-nav {
+  padding-inline: var(--rhythm-3) !important;
+}
+
+.settings-page .settings-tabs .ant-tabs-tab {
+  min-height: var(--control-height) !important;
+  padding: 0 var(--rhythm-2) !important;
+}

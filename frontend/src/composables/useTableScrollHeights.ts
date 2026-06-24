@@ -1,10 +1,21 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import type { ComponentPublicInstance } from 'vue'
 
 const PAGE_TABLE_RESERVED_HEIGHT = 112
 const PAGE_TABLE_MIN_HEIGHT = 220
 const PAGE_TABLE_FALLBACK_OFFSET = 378
 const PAGE_TABLE_FALLBACK_MIN = 260
 const PAGE_TABLE_EXTRA_BUFFER = 0
+
+export function createBindPageTableContainerAction({
+  setContainer,
+}: {
+  setContainer: (element: HTMLElement | null) => void
+}) {
+  return (element: Element | ComponentPublicInstance | null) => {
+    setContainer(element instanceof HTMLElement ? element : null)
+  }
+}
 
 export function useTableScrollHeights() {
   const viewportHeight = ref<number>(window.innerHeight)

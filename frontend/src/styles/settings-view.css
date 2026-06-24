@@ -1,0 +1,279 @@
+.settings-embedded-frame {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 0;
+  overflow-x: hidden;
+}
+
+.settings-embedded-frame .page-stack {
+  height: auto;
+  min-height: 0;
+  max-width: 100%;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+.settings-embedded-frame .page-grid-fill {
+  min-height: 0;
+}
+
+.settings-tab-card .ant-card-body {
+  padding: 0;
+}
+
+.settings-tabs {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  height: 100%;
+  max-width: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.settings-tabs .ant-tabs-nav {
+  flex: 0 0 auto;
+  min-width: 0;
+  max-width: 100%;
+  margin-bottom: 0;
+  overflow: hidden;
+}
+
+.settings-tabs .ant-tabs-nav-list {
+  align-items: center;
+  gap: 18px;
+}
+
+.settings-tabs .ant-tabs-tab {
+  align-items: center;
+  min-height: 42px;
+  margin: 0 !important;
+  padding: 0 2px !important;
+}
+
+.settings-tabs .ant-tabs-tab-btn {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 18px;
+}
+
+.settings-tabs .ant-tabs-content-holder,
+.settings-tabs .ant-tabs-content,
+.settings-tabs .ant-tabs-tabpane {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.settings-tabs .ant-tabs-content-holder {
+  overflow: hidden;
+}
+
+.settings-tabs .ant-tabs-content {
+  display: flex;
+}
+
+.settings-tabs .ant-tabs-tabpane {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.settings-tabs .ant-tabs-ink-bar,
+.settings-tabs .ant-tabs-content {
+  transition: none !important;
+}
+
+@media (max-width: 720px) {
+  .settings-tabs .ant-tabs-nav {
+    margin-bottom: 10px;
+  }
+
+  .settings-tabs .ant-tabs-nav-wrap {
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .settings-tabs .ant-tabs-nav-wrap::-webkit-scrollbar {
+    display: none;
+  }
+
+  .settings-tabs .ant-tabs-nav-list {
+    min-width: max-content;
+    transform: none !important;
+  }
+
+  .settings-tabs .ant-tabs-nav-operations {
+    display: none !important;
+  }
+
+  .settings-tabs .ant-tabs-tab {
+    flex: 0 0 auto;
+    min-width: 44px;
+    min-height: 36px;
+    padding: 8px 8px;
+  }
+
+  .settings-tabs .ant-tabs-tab-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    min-height: 32px;
+    line-height: 20px;
+  }
+
+  .settings-tab-card .ant-input-number-handler {
+    min-width: 32px;
+    height: 20px;
+  }
+
+  .settings-tab-card .ant-input-number-handler-wrap {
+    width: 32px;
+  }
+
+  .settings-tab-card .ant-input-number-handler-up-inner,
+  .settings-tab-card .ant-input-number-handler-down-inner {
+    min-width: 32px;
+  }
+}
+
+@media (max-width: 720px) and (hover: hover) and (pointer: fine) {
+  .settings-tabs .ant-tabs-nav-wrap {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(100, 116, 139, 0.34) transparent;
+  }
+
+  .settings-tabs .ant-tabs-nav-wrap::-webkit-scrollbar {
+    display: block;
+    height: 6px;
+  }
+
+  .settings-tabs .ant-tabs-nav-wrap::-webkit-scrollbar-thumb {
+    background: rgba(100, 116, 139, 0.28);
+    border-radius: var(--radius-xs);
+  }
+}
+
+.settings-tab-card .card-scroll {
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.settings-tab-card .card-scroll--padded {
+  padding: 18px 20px 0;
+}
+
+.settings-tab-card .card-actions {
+  padding: 10px 20px 18px;
+  border-top: 0;
+}
+
+.runtime-tab-form {
+  min-height: 0;
+}
+
+.runtime-tab-form .card-scroll {
+  max-height: 100%;
+  overscroll-behavior: contain;
+}
+
+.settings-tab-card .ant-form,
+.settings-tab-card .ant-row,
+.settings-tab-card .ant-col,
+.settings-tab-card .ant-form-item,
+.settings-tab-card .ant-form-item-control,
+.settings-tab-card .ant-form-item-control-input,
+.settings-tab-card .ant-form-item-control-input-content {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.desktop-runtime-row {
+  margin-top: 8px;
+}
+
+.runtime-stop-results {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+  min-width: 0;
+}
+
+.runtime-stop-results .ant-tag {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.settings-switch-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+  margin-top: 4px;
+}
+
+.settings-switch-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 62px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-control);
+  background: var(--bg-panel);
+}
+
+.settings-switch-row strong,
+.settings-switch-row small {
+  display: block;
+}
+
+.settings-switch-row strong {
+  color: var(--text-main);
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.settings-switch-row small {
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.settings-page.settings-page .settings-switch-row .app-switch {
+  justify-self: end;
+}
+
+@media (max-width: 900px) {
+  .settings-switch-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .settings-switch-row {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    gap: 10px;
+    min-height: 0;
+    padding: 12px;
+  }
+
+  .settings-switch-row small {
+    max-width: 100%;
+  }
+
+  .settings-page.settings-page .settings-switch-row .app-switch {
+    justify-self: end;
+  }
+}

@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"log"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -16,7 +17,8 @@ import (
 const DefaultLogRetentionDays = 5
 
 type LogCleanupRunner struct {
-	DatabasePath string
+	DatabasePath         string
+	DatabasePathProvider func() string
 }
 
 type LogCleanupResult struct {
@@ -35,8 +37,13 @@ func RunLogCleanupLoop(ctx context.Context, databasePath string) {
 	runner.Run(ctx)
 }
 
+func RunLogCleanupLoopWithProvider(ctx context.Context, provider func() string) {
+	runner := LogCleanupRunner{DatabasePathProvider: provider}
+	runner.Run(ctx)
+}
+
 func (r LogCleanupRunner) Run(ctx context.Context) {
-	if strings.TrimSpace(r.DatabasePath) == "" {
+	if strings.TrimSpace(r.currentDatabasePath()) == "" && r.DatabasePathProvider == nil {
 		return
 	}
 	ticker := time.NewTicker(time.Hour)
@@ -55,7 +62,11 @@ func (r LogCleanupRunner) Run(ctx context.Context) {
 }
 
 func (r LogCleanupRunner) CleanupOnce(now time.Time) error {
-	db, err := database.Open(config.Config{DatabaseURL: "sqlite:///" + filepath.ToSlash(r.DatabasePath)})
+	databasePath := r.currentDatabasePath()
+	if strings.TrimSpace(databasePath) == "" {
+		return os.ErrInvalid
+	}
+	db, err := database.Open(config.Config{DatabaseURL: "sqlite:///" + filepath.ToSlash(databasePath)})
 	if err != nil {
 		return err
 	}
@@ -73,6 +84,15 @@ func (r LogCleanupRunner) CleanupOnce(now time.Time) error {
 		log.Printf("日志清理: 已删除 %d 条旧日志，保留 %d 天", result.TotalDeleted(), result.RetentionDays)
 	}
 	return nil
+}
+
+func (r LogCleanupRunner) currentDatabasePath() string {
+	if r.DatabasePathProvider != nil {
+		if path := strings.TrimSpace(r.DatabasePathProvider()); path != "" {
+			return path
+		}
+	}
+	return r.DatabasePath
 }
 
 func CleanupOldLogs(db *gorm.DB, retentionDays int, now time.Time) (LogCleanupResult, error) {

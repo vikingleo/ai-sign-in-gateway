@@ -94,6 +94,75 @@ func TestHTTPStationStatusAndCheckin(t *testing.T) {
 	}
 }
 
+func TestHTTPStationUsesDefaultBalanceUnitWhenUnitPathIsEmpty(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/status":
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"success": true,
+				"message": "ok",
+				"data": map[string]any{
+					"balance":   12.5,
+					"email":     "admin@example.com",
+					"logged_in": true,
+				},
+			})
+		case "/checkin":
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"success": true,
+				"message": "signed",
+				"data": map[string]any{
+					"balance": 13.5,
+				},
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	site := models.Site{
+		BaseURL:   server.URL,
+		PluginKey: "http-relay-station",
+		Credentials: models.JSONMap{
+			"api_key": "token-123",
+		},
+		PluginConfig: models.JSONMap{
+			"auth_mode":            "bearer",
+			"status_path":          "/status",
+			"status_method":        "GET",
+			"status_login_path":    "data.logged_in",
+			"status_balance_path":  "data.balance",
+			"status_account_path":  "data.email",
+			"status_message_path":  "message",
+			"checkin_path":         "/checkin",
+			"checkin_method":       "POST",
+			"checkin_success_path": "success",
+			"checkin_message_path": "message",
+			"checkin_balance_path": "data.balance",
+			"default_balance_unit": "USD",
+		},
+	}
+
+	plugin := NewHTTPStation()
+	status, err := plugin.FetchAccountStatus(context.Background(), site, 5)
+	if err != nil {
+		t.Fatalf("FetchAccountStatus returned error: %v", err)
+	}
+	if status.BalanceUnit == nil || *status.BalanceUnit != "$" {
+		t.Fatalf("BalanceUnit = %v", status.BalanceUnit)
+	}
+
+	result, err := plugin.Checkin(context.Background(), site, 5)
+	if err != nil {
+		t.Fatalf("Checkin returned error: %v", err)
+	}
+	if result.BalanceUnit == nil || *result.BalanceUnit != "$" {
+		t.Fatalf("checkin BalanceUnit = %v", result.BalanceUnit)
+	}
+}
+
 func TestHTTPStationInviteAPIParsesSeparateInvitePayload(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if got := r.Header.Get("Authorization"); got != "Bearer token-123" {

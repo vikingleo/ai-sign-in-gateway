@@ -1,0 +1,253 @@
+.session-layout-shell .app-header {
+  display: none !important;
+}
+
+.session-layout-shell .app-content {
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+.chat-workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 292px;
+  height: 100vh;
+  min-height: 0;
+  overflow: hidden;
+  color: #0a3472;
+  background: var(--bg-page);
+}
+
+.session-sidebar {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+  border-left: 1px solid rgba(137, 174, 232, 0.28);
+  background: var(--bg-panel);
+  backdrop-filter: none;
+}
+
+.session-sidebar__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 16px 14px 12px;
+  border-bottom: 1px solid rgba(137, 174, 232, 0.2);
+}
+
+.session-sidebar__header strong {
+  display: block;
+  color: #0d3679;
+  font-size: 15px;
+  line-height: 1.3;
+}
+
+.session-sidebar__header span {
+  display: block;
+  margin-top: 2px;
+  color: #6b7fa5;
+  font-size: 12px;
+}
+
+.session-sidebar__actions {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.session-sidebar__actions button,
+.session-history-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(137, 174, 232, 0.32);
+  background: rgba(255, 255, 255, 0.78);
+  color: #2f5288;
+  cursor: pointer;
+}
+
+.chat-workbench.chat-workbench .session-sidebar__actions button:hover,
+.chat-workbench.chat-workbench .session-sidebar__actions button:focus-visible,
+.chat-workbench.chat-workbench .session-history-delete:hover,
+.chat-workbench.chat-workbench .session-history-delete:focus-visible {
+  border-color: rgba(37, 99, 235, 0.34) !important;
+  background: #eff6ff !important;
+  color: #1d4ed8 !important;
+}
+
+.session-sidebar__actions button {
+  width: var(--control-height);
+  height: var(--control-height);
+  border-radius: 8px;
+}
+
+.session-sidebar__actions button:disabled,
+.session-history-delete:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.session-sidebar__list {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 10px;
+}
+
+.session-sidebar__list.is-loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.session-history-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 30px;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 4px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+}
+
+.session-history-item:hover,
+.session-history-item.is-active {
+  border-color: rgba(37, 99, 235, 0.18);
+  background: rgba(232, 241, 255, 0.86);
+}
+
+.session-history-item:hover {
+  box-shadow: var(--shadow-control-hover);
+}
+
+.session-history-item__main {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 6px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.session-history-item__title,
+.session-history-item__preview {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-history-item__title {
+  color: #183b73;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.session-history-item__preview {
+  color: #536b93;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.session-history-item__meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: #8a9bb7;
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.session-history-item__meta span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-history-delete {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 8px;
+  color: #9f3a3a;
+  font-size: 12px;
+}
+
+.session-toolbar__select {
+  flex: 1 1 240px;
+  width: clamp(220px, 24vw, 420px);
+  min-width: 0;
+}
+
+.session-toolbar__select--model {
+  flex-basis: 320px;
+  width: clamp(240px, 28vw, 480px);
+}
+
+.session-clear-button {
+  flex: 0 0 auto;
+}
+
+.session-clear-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: var(--control-height);
+  padding: 0 14px;
+  border: 1px solid rgba(134, 172, 230, 0.32);
+  border-radius: var(--radius-control);
+  background: var(--bg-panel);
+  color: #2e528f;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.session-clear-button:disabled,
+.session-send-button:disabled,
+.session-tool-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.chat-workbench.chat-workbench .session-clear-button:not(:disabled):hover,
+.chat-workbench.chat-workbench .session-clear-button:not(:disabled):focus-visible {
+  border-color: rgba(37, 99, 235, 0.36) !important;
+  background: #eff6ff !important;
+  color: #1d4ed8 !important;
+}
+
+.session-main {
+  position: relative;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--bg-page);
+}
+
+.session-history {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 40px 32px 24px;
+  scrollbar-gutter: stable;
+}
+
+.session-empty {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  min-height: 100%;
+  padding-bottom: 118px;
+  text-align: center;
+}

@@ -1,0 +1,55 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
+
+const componentPath = new URL('../src/components/gateway/GatewayRouteBalanceManualDialog.vue', import.meta.url)
+const hostPath = new URL('../src/components/gateway/GatewayOverlayHost.vue', import.meta.url)
+
+test('gateway route balance manual dialog declares the retry UI contract', async () => {
+  const source = await readFile(componentPath, 'utf8')
+
+  assert.match(source, /import type \{ GatewayRoute \} from '\.\.\/\.\.\/types'/)
+  assert.match(source, /const open = defineModel<boolean>\('open'/)
+  assert.match(source, /const url = defineModel<string>\('url'/)
+  assert.match(source, /route: GatewayRoute \| null/)
+  assert.match(source, /message: string/)
+  assert.match(source, /loading: boolean/)
+  assert.match(source, /loadRouteLabel: \(route: GatewayRoute\) => string/)
+  assert.match(source, /submit: \[\]/)
+  assert.match(source, /<a-modal/)
+  assert.match(source, /v-model:open="open"/)
+  assert.match(source, /title="余额探测接口"/)
+  assert.match(source, /width="640px"/)
+  assert.match(source, /:confirm-loading="loading"/)
+  assert.match(source, /ok-text="重试探测"/)
+  assert.match(source, /@ok="\$emit\('submit'\)"/)
+  assert.match(source, /<a-form layout="vertical">/)
+  assert.match(source, /<a-alert/)
+  assert.match(source, /v-if="message"/)
+  assert.match(source, /type="warning"/)
+  assert.match(source, /show-icon/)
+  assert.match(source, /:message="message"/)
+  assert.match(source, /style="margin-bottom: 12px"/)
+  assert.match(source, /<a-form-item :label="route \? loadRouteLabel\(route\) : '当前路由'">/)
+  assert.match(source, /v-model:value="url"/)
+  assert.match(source, /placeholder="https:\/\/example\.com\/v1\/usage 或 \/api\/usage\/token\/"/)
+  assert.match(source, /autocomplete="off"/)
+  assert.match(source, /成功后会保存到当前路由，后续余额探测优先使用这个接口，并使用该路由自己的 API Key。/)
+})
+
+test('GatewayOverlayHost delegates manual route balance dialog rendering to the component boundary', async () => {
+  const source = await readFile(hostPath, 'utf8')
+
+  assert.match(source, /import GatewayRouteBalanceManualDialog from '\.\/GatewayRouteBalanceManualDialog\.vue'/)
+  assert.match(source, /<GatewayRouteBalanceManualDialog/)
+  assert.match(source, /v-model:open="balanceProbeManualOpen"/)
+  assert.match(source, /v-model:url="balanceProbeManualURL"/)
+  assert.match(source, /:route="balanceRoute"/)
+  assert.match(source, /:message="balanceMessage"/)
+  assert.match(source, /:loading="balanceLoading"/)
+  assert.match(source, /:load-route-label="loadRouteLabel"/)
+  assert.match(source, /@submit="emit\('balance-submit'\)"/)
+  assert.doesNotMatch(source, /<a-modal\s+v-model:open="balanceProbeManualOpen"/)
+  assert.doesNotMatch(source, /balanceProbeManualRoute \? loadRouteLabel/)
+  assert.doesNotMatch(source, /v-model:value="balanceProbeManualURL"/)
+})

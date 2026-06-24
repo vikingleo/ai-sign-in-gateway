@@ -1,0 +1,91 @@
+.gateway-usage-input {
+  height: var(--control-height);
+  min-height: var(--control-height);
+  min-width: 196px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-control);
+  padding: 0 12px;
+  color: #172033;
+  background: #ffffff;
+  font-size: 13px;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+.gateway-usage-input:focus-visible {
+  border-color: rgba(110, 168, 255, 0.5);
+  box-shadow: 0 0 0 2px rgba(77, 144, 254, 0.18);
+}
+
+.gateway-usage-summary {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--rhythm-2);
+  padding: var(--rhythm-2) var(--rhythm-3) 0;
+}
+
+.gateway-usage-table {
+  position: relative;
+  z-index: 1;
+  padding: var(--rhythm-2) var(--rhythm-3) var(--rhythm-3);
+}
+
+.gateway-usage-table .ant-table,
+.gateway-usage-table .ant-table-container,
+.gateway-usage-table .ant-table-content {
+  background: transparent !important;
+}
+
+.gateway-usage-table .ant-table-thead > tr > th {
+  background: #f1f5f9 !important;
+  color: #334155;
+  border-bottom-color: rgba(148, 163, 184, 0.2) !important;
+}
+
+.gateway-usage-table .ant-table-tbody > tr > td {
+  color: #172033;
+  background: rgba(255, 255, 255, 0.82);
+  border-bottom-color: rgba(148, 163, 184, 0.16) !important;
+}
+
+.gateway-usage-summary__item {
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-container);
+  padding: var(--rhythm-2);
+  background: var(--bg-panel);
+  box-shadow: none;
+}
+
+.gateway-usage-summary__item span {
+  display: block;
+  margin-bottom: 6px;
+  color: #64748b;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.gateway-usage-summary__item strong {
+  color: #172033;
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.gateway-usage-summary__item--primary {
+  background: var(--bg-panel);
+}
+
+.gateway-usage-summary__item--success {
+  background: var(--bg-panel);
+}
+
+.gateway-usage-summary__item--warning {
+  background: var(--bg-panel);
+}
+
+.gateway-usage-summary__item--info {
+  background: var(--bg-panel);
+}

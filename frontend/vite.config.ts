@@ -16,16 +16,28 @@ function resolveAntdChunk(id: string): string {
   const segment = match?.[1] ?? 'core'
   const normalized = segment.replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase()
 
-  if (['config-provider', 'grid', 'layout', 'space', 'tag'].includes(normalized)) {
+  if (['config-provider', 'grid', 'layout', 'space'].includes(normalized)) {
     return 'antd-shell'
   }
 
-  if (['button', 'input', 'input-number', 'select', 'switch', 'checkbox', 'radio', 'form'].includes(normalized)) {
+  if (['button', 'checkbox', 'form', 'input', 'input-number', 'radio', 'select', 'switch'].includes(normalized)) {
     return 'antd-forms'
   }
 
-  if (['alert', 'dropdown', 'empty', 'modal', 'spin'].includes(normalized)) {
+  if (['alert', 'dropdown', 'message', 'modal', 'notification', 'popconfirm', 'spin'].includes(normalized)) {
     return 'antd-feedback'
+  }
+
+  if (['drawer', 'popover', 'tabs', 'tooltip'].includes(normalized)) {
+    return 'antd-overlay'
+  }
+
+  if (['menu'].includes(normalized)) {
+    return 'antd-navigation'
+  }
+
+  if (['avatar', 'empty', 'list', 'tag', 'typography'].includes(normalized)) {
+    return 'antd-display'
   }
 
   if (['card', 'pagination', 'statistic', 'table'].includes(normalized)) {

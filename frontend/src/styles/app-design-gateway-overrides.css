@@ -1,0 +1,108 @@
+.gateway-metric-card {
+  background: var(--bg-panel) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+.gateway-metric-card__label {
+  color: var(--text-faint);
+  font-size: 12px;
+  letter-spacing: 0;
+}
+
+.gateway-metric-card__value {
+  color: var(--text-main);
+  font-weight: 600;
+  font-size: 18px;
+  font-feature-settings: 'tnum';
+}
+
+.gateway-strategy-card {
+  border-radius: var(--radius-container) !important;
+  background: var(--bg-panel) !important;
+}
+
+.gateway-trend-card {
+  background: var(--bg-panel) !important;
+}
+
+.gateway-trend-bar__segment--success {
+  background: var(--success) !important;
+}
+
+.gateway-trend-bar__segment--failed {
+  background: var(--danger) !important;
+}
+
+/* Drawer table polish */
+.ant-drawer-body .ant-table-pagination {
+  position: sticky;
+  bottom: 0;
+  background: var(--bg-panel);
+  margin: 0 !important;
+  padding: 12px 16px !important;
+  border-top: 1px solid var(--border-muted);
+  z-index: 2;
+}
+
+.ant-drawer-body .ant-table-thead > tr > th {
+  background: var(--bg-muted) !important;
+}
+
+/* Toast / alert text wrapping */
+.ant-notification-notice {
+  border-radius: var(--radius-container) !important;
+  box-shadow: var(--shadow-pop) !important;
+}
+
+.ant-message .ant-message-notice-content {
+  border-radius: var(--radius-control) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+/* Route pool filter controls */
+.route-pool-title .ant-btn-sm {
+  border-radius: var(--radius-control) !important;
+  font-weight: 500;
+}
+
+.route-pool-title .ant-btn-sm.ant-btn-primary {
+  background: var(--accent-soft) !important;
+  border-color: transparent !important;
+  color: var(--accent-strong) !important;
+  box-shadow: 0 0 0 1px rgba(79, 124, 255, 0.18) inset;
+}
+
+.route-pool-title .ant-btn-sm.ant-btn-default:hover {
+  background: var(--accent-soft) !important;
+  border-color: transparent !important;
+  color: var(--accent-strong) !important;
+}
+
+/* Empty state polish */
+.ant-empty-description {
+  color: var(--text-faint);
+  font-size: 12px;
+}
+
+/* Responsive guards */
+@media (max-width: 1280px) {
+  .gateway-summary-row__strategy {
+    max-width: none;
+  }
+}
+
+@media (max-width: 1024px) {
+  .gateway-summary-row {
+    flex-direction: column;
+  }
+  .gateway-summary-row__strategy,
+  .gateway-summary-row__trend {
+    height: auto;
+    width: 100%;
+    max-width: none;
+  }
+
+  .manual-api-key-editor {
+    grid-template-columns: 1fr;
+  }
+}

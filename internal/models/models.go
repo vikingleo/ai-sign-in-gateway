@@ -20,7 +20,7 @@ func IsAdminRole(role string) bool {
 
 type AdminUser struct {
 	ID           uint       `gorm:"primaryKey" json:"id"`
-	Username     string     `gorm:"size:50;uniqueIndex;not null" json:"username"`
+	Username     string     `gorm:"size:200;uniqueIndex;not null" json:"username"`
 	PasswordHash string     `gorm:"size:255;not null" json:"-"`
 	Role         string     `gorm:"size:30;default:admin;index;not null" json:"role"`
 	IsEnabled    bool       `gorm:"default:true;index;not null" json:"is_enabled"`

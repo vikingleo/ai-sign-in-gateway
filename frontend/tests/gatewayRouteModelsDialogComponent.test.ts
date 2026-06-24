@@ -1,0 +1,55 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
+
+const componentPath = new URL('../src/components/gateway/GatewayRouteModelsDialog.vue', import.meta.url)
+const hostPath = new URL('../src/components/gateway/GatewayOverlayHost.vue', import.meta.url)
+
+test('gateway route models dialog declares the route model editing UI contract', async () => {
+  const source = await readFile(componentPath, 'utf8')
+
+  assert.match(source, /import type \{ GatewayRoute \} from '\.\.\/\.\.\/types'/)
+  assert.match(source, /const open = defineModel<boolean>\('open'/)
+  assert.match(source, /const requestURLs = defineModel<string>\('requestURLs'/)
+  assert.match(source, /const supportedModels = defineModel<string\[\]>\('supportedModels'/)
+  assert.match(source, /route: GatewayRoute \| null/)
+  assert.match(source, /saving: boolean/)
+  assert.match(source, /loadRouteLabel: \(route: GatewayRoute\) => string/)
+  assert.match(source, /save: \[\]/)
+  assert.match(source, /<a-modal/)
+  assert.match(source, /v-model:open="open"/)
+  assert.match(source, /title="编辑路由配置"/)
+  assert.match(source, /width="640px"/)
+  assert.match(source, /:confirm-loading="saving"/)
+  assert.match(source, /@ok="\$emit\('save'\)"/)
+  assert.match(source, /<a-form layout="vertical">/)
+  assert.match(source, /<a-form-item label="路由 API URL">/)
+  assert.match(source, /<a-textarea/)
+  assert.match(source, /v-model:value="requestURLs"/)
+  assert.match(source, /:rows="4"/)
+  assert.match(source, /placeholder="每行一个 URL。留空时使用站点管理中的 API URL 或 Base URL。"/)
+  assert.match(source, /优先级高于站点级 API URL/)
+  assert.match(source, /<a-form-item :label="route \? loadRouteLabel\(route\) : '当前路由'">/)
+  assert.match(source, /v-model:value="supportedModels"/)
+  assert.match(source, /mode="tags"/)
+  assert.match(source, /:token-separators="\[',', '，', '\\n', '\\t'\]"/)
+  assert.match(source, /placeholder="留空表示该路由不会接收带 model 的精确匹配请求"/)
+  assert.match(source, /只有精确包含该模型 ID 的同类型路由会参与调度/)
+})
+
+test('GatewayOverlayHost delegates route models dialog rendering to the component boundary', async () => {
+  const source = await readFile(hostPath, 'utf8')
+
+  assert.match(source, /import GatewayRouteModelsDialog from '\.\/GatewayRouteModelsDialog\.vue'/)
+  assert.match(source, /<GatewayRouteModelsDialog/)
+  assert.match(source, /v-model:open="routeModelsOpen"/)
+  assert.match(source, /v-model:request-u-r-ls="routeModelsRequestUrls"/)
+  assert.match(source, /v-model:supported-models="routeModelsSupportedModels"/)
+  assert.match(source, /:route="routeModelsRoute"/)
+  assert.match(source, /:saving="routeModelsSaving"/)
+  assert.match(source, /:load-route-label="loadRouteLabel"/)
+  assert.match(source, /@save="emit\('route-models-save'\)"/)
+  assert.doesNotMatch(source, /<a-modal\s+v-model:open="routeModelsOpen"/)
+  assert.doesNotMatch(source, /routeModelsDialogRoute \? loadRouteLabel/)
+  assert.doesNotMatch(source, /v-model:value="routeModelsDialogValue"/)
+})

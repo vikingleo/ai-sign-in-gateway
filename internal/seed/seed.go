@@ -38,17 +38,25 @@ func InitialData(db *gorm.DB, cfg config.Config) error {
 		}
 	}
 
+	return EnsureSystemSettings(db, cfg)
+}
+
+func EnsureSystemSettings(db *gorm.DB, cfg config.Config) error {
 	var settings models.SystemSetting
-	err = db.First(&settings, 1).Error
+	err := db.First(&settings, 1).Error
 	if err == nil {
 		return nil
 	}
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
+	timezone := strings.TrimSpace(cfg.SchedulerTimezone)
+	if timezone == "" {
+		timezone = "Asia/Shanghai"
+	}
 	return db.Create(&models.SystemSetting{
 		ID:                                 1,
-		Timezone:                           cfg.SchedulerTimezone,
+		Timezone:                           timezone,
 		ScheduleEnabled:                    true,
 		DailyRunTime:                       "09:00",
 		CheckinConcurrency:                 1,
@@ -73,6 +81,10 @@ func InitialData(db *gorm.DB, cfg config.Config) error {
 		GatewayMaxAttempts:                 0,
 		GatewayFailureRetryMode:            "retryable",
 		GatewayRouteConcurrencyLimit:       5,
+		GatewaySmartLatencyBias:            1,
+		GatewaySmartConcurrencyBias:        1.5,
+		GatewaySmartFailureBias:            1,
+		GatewaySmartPriorityBias:           0.5,
 		GatewayConcurrencyTransferStrategy: "limit_only",
 		GatewayConcurrencyOverflowStrategy: "latency_first",
 		GatewayAPIKey:                      strings.TrimSpace(cfg.GatewayAPIKey),

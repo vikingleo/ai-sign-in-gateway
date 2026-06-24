@@ -28,7 +28,6 @@ import (
 func (a *App) ToolRoutes(r chi.Router) {
 	r.Post("/models", a.ModelList)
 	r.Post("/chat-test", a.ChatTest)
-	r.Post("/mcp-test", a.MCPTest)
 	r.Get("/chat-sessions", a.ListChatSessions)
 	r.Post("/chat-sessions", a.CreateChatSession)
 	r.Get("/chat-sessions/{sessionID}", a.GetChatSession)
@@ -452,10 +451,14 @@ func shortenChatSessionText(value string, limit int) string {
 	if limit <= 0 || len(value) <= limit {
 		return value
 	}
-	if limit <= 1 {
-		return value[:limit]
+	runes := []rune(value)
+	if len(runes) <= limit {
+		return value
 	}
-	return value[:limit-1] + "…"
+	if limit <= 3 {
+		return string(runes[:limit])
+	}
+	return string(runes[:limit-3]) + "..."
 }
 
 func chatSessionQueryInt(r *http.Request, key string, fallback, min, max int) int {
@@ -759,10 +762,6 @@ func chatImagePathFromConfig(config models.JSONMap, key string) string {
 		value = "/" + value
 	}
 	return value
-}
-
-func (a *App) MCPTest(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, schemas.McpTestResponse{OK: false, Message: "Go MCP 测试待接入。", ToolEvents: []string{}})
 }
 
 type upstreamResult struct {

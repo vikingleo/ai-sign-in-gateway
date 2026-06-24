@@ -21,7 +21,7 @@ export interface ChatSessionViewMessage {
 export function normalizeChatSessionTitle(value: string, fallback = '新会话') {
   const title = value.trim().replace(/\s+/g, ' ')
   const safe = title || fallback
-  return safe.length > 48 ? `${safe.slice(0, 47)}…` : safe
+  return safe.length > 48 ? `${safe.slice(0, 45)}...` : safe
 }
 
 export function chatSessionPreview(value: string, fallback = '暂无消息') {

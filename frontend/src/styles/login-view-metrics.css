@@ -1,0 +1,155 @@
+.metric-panel {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  width: min(928px, 100%);
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  backdrop-filter: none;
+}
+
+.metric-card {
+  min-width: 0;
+  min-height: 154px;
+  padding: 13px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: none;
+}
+
+.metric-head,
+.metric-value {
+  display: flex;
+}
+
+.metric-head {
+  align-items: center;
+  gap: 9px;
+  color: #102c61;
+}
+
+.metric-icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  color: #1979ff;
+  background: rgba(37, 136, 255, 0.13);
+}
+
+.metric-head strong {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.metric-value {
+  align-items: baseline;
+  gap: 5px;
+  margin-top: 14px;
+}
+
+.metric-value span {
+  color: #07194a;
+  font-size: 30px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.metric-value small {
+  color: #173768;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.metric-value em {
+  margin-left: auto;
+  padding: 3px 9px;
+  border-radius: var(--radius-control);
+  color: #0aa76c;
+  background: rgba(30, 211, 138, 0.16);
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.metric-wave {
+  width: 100%;
+  height: 34px;
+  margin-top: 8px;
+  overflow: visible;
+}
+
+.metric-wave path {
+  fill: none;
+  stroke: #1a7cff;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3;
+}
+
+.metric-progress {
+  height: 10px;
+  margin-top: 24px;
+  overflow: hidden;
+  border-radius: var(--radius-xs);
+  background: rgba(117, 183, 255, 0.22);
+}
+
+.metric-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #2563eb;
+  box-shadow: none;
+}
+
+.metric-card p {
+  margin: 8px 0 0;
+  color: #506f98;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.metric-card--score {
+  text-align: center;
+}
+
+.score-frame {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  margin: 10px auto 4px;
+  border: 8px solid #bfdbfe;
+  border-radius: var(--radius-container);
+  background: #ffffff;
+  box-shadow: none;
+}
+
+.score-frame span {
+  color: #07194a;
+  font-size: 30px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.score-frame small {
+  color: #385c89;
+  font-weight: 700;
+}
+
+.metric-card--score p {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #0a9c64;
+}

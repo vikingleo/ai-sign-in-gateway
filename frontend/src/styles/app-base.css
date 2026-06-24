@@ -1,0 +1,194 @@
+:root {
+  color-scheme: light;
+  font-family: 'IBM Plex Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #0f172a;
+  background: #f8fafc;
+
+  /* Surface & background */
+  --bg-page: #f8fafc;
+  --bg-panel: #ffffff;
+  --bg-muted: #f1f5f9;
+  --bg-subtle: #f8fafc;
+
+  /* Border */
+  --border-soft: #e2e8f0;
+  --border-muted: #edf2f7;
+  --border-strong: #cbd5e1;
+
+  /* Text */
+  --text-main: #0f172a;
+  --text-secondary: #344054;
+  --text-muted: #64748b;
+  --text-faint: #94a3b8;
+  --text-code: #24334d;
+
+  /* Brand & status */
+  --accent: #2563eb;
+  --accent-soft: #eff6ff;
+  --accent-strong: #1d4ed8;
+  --accent-foreground: #ffffff;
+  --info: #0284c7;
+  --info-soft: #e0f2fe;
+  --success: #16a34a;
+  --success-soft: #dcfce7;
+  --warning: #f59e0b;
+  --warning-soft: #fef3c7;
+  --warning-strong: #b86b00;
+  --danger: #dc2626;
+  --danger-soft: #fee2e2;
+  --table-header-bg: #f2f5f9;
+  --table-hover-bg: #f7f9ff;
+  --table-selected-bg: #eef8f5;
+
+  /* Shadow */
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-card-hover: 0 6px 18px rgba(15, 23, 42, 0.08);
+  --shadow-control-hover: 0 4px 12px rgba(15, 23, 42, 0.08);
+  --shadow-control-active: 0 1px 3px rgba(15, 23, 42, 0.08);
+  --focus-ring: 0 0 0 3px rgba(37, 99, 235, 0.18);
+  --shadow-pop: 0 12px 28px rgba(15, 23, 42, 0.12);
+
+  /* Radius */
+  --radius-xs: 4px;
+  --radius-control: 8px;
+  --radius-container: 8px;
+
+  /* Spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --page-gutter-x: 24px;
+  --page-gutter-y: 24px;
+  --content-gutter: 16px;
+  --grid-gutter-half: 8px;
+  --table-gutter: 0px;
+  --table-filter-gutter: 8px;
+  --pagination-gutter-y: 8px;
+  --pagination-gutter-x: 8px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  color: var(--text-main);
+  background: var(--bg-page);
+  font-size: 14px;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.ant-message {
+  font-family: 'IBM Plex Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.ant-layout {
+  background: transparent;
+}
+
+.ant-card,
+.ant-alert,
+.ant-modal-content,
+.ant-modal-header,
+.ant-popover-inner,
+.ant-dropdown-menu,
+.ant-notification-notice,
+.ant-table-wrapper .ant-table,
+.ant-table-wrapper .ant-table-container,
+.ant-picker-dropdown .ant-picker-panel-container {
+  border-radius: var(--radius-container) !important;
+}
+
+.ant-btn,
+.ant-tag,
+.ant-switch,
+.ant-pagination .ant-pagination-item,
+.ant-pagination .ant-pagination-prev .ant-pagination-item-link,
+.ant-pagination .ant-pagination-next .ant-pagination-item-link {
+  border-radius: var(--radius-container);
+}
+
+.ant-input,
+.ant-input-affix-wrapper,
+.ant-input-number,
+.ant-input-number-input,
+.ant-select:not(.ant-select-customize-input) .ant-select-selector,
+.ant-picker,
+.ant-mentions,
+.ant-input-group-addon,
+.ant-textarea-show-count::after {
+  border-radius: var(--radius-control) !important;
+}
+
+.ant-form-item {
+  margin-bottom: 12px;
+}
+
+.ant-form-item-label {
+  padding-bottom: 4px !important;
+}
+
+.ant-form-item-label > label {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ant-card .ant-card-head {
+  min-height: 42px;
+  padding: 0 14px;
+  border-bottom-color: var(--border-muted);
+}
+
+.ant-card .ant-card-head-title,
+.ant-card .ant-card-extra {
+  padding: 10px 0;
+  font-size: 14px;
+}
+
+.ant-card .ant-card-body {
+  padding: 14px;
+}
+
+.ant-table-wrapper .ant-table-thead > tr > th,
+.ant-table-wrapper .ant-table-tbody > tr > td {
+  padding: 9px 12px;
+}
+
+.ant-table-wrapper .ant-table-thead > tr > th {
+  background: var(--table-header-bg);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ant-statistic .ant-statistic-title {
+  margin-bottom: 2px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.ant-statistic .ant-statistic-content {
+  color: var(--text-main);
+  font-size: 24px;
+  line-height: 1.15;
+}

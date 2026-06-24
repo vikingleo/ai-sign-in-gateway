@@ -1,0 +1,32 @@
+.api-key-dialog-list {
+  display: grid;
+  gap: 10px;
+}
+
+.api-key-dialog-item {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-muted);
+  border-radius: var(--radius-container);
+  background: var(--bg-subtle);
+}
+
+.api-key-dialog-item__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.manual-api-key-editor {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) 140px minmax(220px, 2fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.plugin-tag.ant-tag {
+  margin-inline-end: 0;
+  font-weight: 600;
+}

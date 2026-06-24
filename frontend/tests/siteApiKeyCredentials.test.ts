@@ -15,30 +15,30 @@ import {
 test('removes synced api key entries and promotes the next stored key', () => {
   const updated = removeSiteApiKeyCredential(
     {
-      api_key: 'sk-synced-primary',
+      api_key: 'key-synced-primary',
       api_keys: [
-        { id: 1, name: 'synced primary', key: 'sk-synced-primary', source: 'api', status: 'active' },
-        { id: 2, name: 'synced backup', key: 'sk-synced-backup', source: 'api', status: 'active' },
-        { id: 'manual-1', name: 'manual', key: 'sk-manual', source: 'manual', status: 'active' },
+        { id: 1, name: 'synced primary', key: 'key-synced-primary', source: 'api', status: 'active' },
+        { id: 2, name: 'synced backup', key: 'key-synced-backup', source: 'api', status: 'active' },
+        { id: 'manual-1', name: 'manual', key: 'key-manual', source: 'manual', status: 'active' },
       ],
     },
-    'sk-synced-primary',
+    'key-synced-primary',
   )
 
-  assert.equal(updated.api_key, 'sk-synced-backup')
+  assert.equal(updated.api_key, 'key-synced-backup')
   assert.deepEqual(
     (updated.api_keys as Array<Record<string, unknown>>).map((item) => item.key),
-    ['sk-synced-backup', 'sk-manual'],
+    ['key-synced-backup', 'key-manual'],
   )
 })
 
 test('clears primary api key when the last stored key is removed', () => {
   const updated = removeSiteApiKeyCredential(
     {
-      api_key: 'sk-only',
-      api_keys: [{ id: 1, name: 'only', key: 'sk-only', source: 'api', status: 'active' }],
+      api_key: 'key-only',
+      api_keys: [{ id: 1, name: 'only', key: 'key-only', source: 'api', status: 'active' }],
     },
-    'sk-only',
+    'key-only',
   )
 
   assert.equal(updated.api_key, '')

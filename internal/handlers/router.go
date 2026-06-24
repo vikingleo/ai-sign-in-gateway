@@ -18,9 +18,19 @@ type App struct {
 }
 
 func NewRouter(db *gorm.DB, cfg config.Config) http.Handler {
-	app := &App{DB: db, Cfg: cfg, PluginManager: plugins.NewManager()}
+	return NewApp(db, cfg).Router()
+}
+
+func NewApp(db *gorm.DB, cfg config.Config) *App {
+	return &App{DB: db, Cfg: cfg, PluginManager: plugins.NewManager()}
+}
+
+func (app *App) Router() http.Handler {
+	if app.PluginManager == nil {
+		app.PluginManager = plugins.NewManager()
+	}
 	r := chi.NewRouter()
-	r.Use(middleware.CORS(cfg.CORSOrigins))
+	r.Use(middleware.CORS(app.Cfg.CORSOrigins))
 
 	r.Get("/api/health", app.Health)
 	r.Post("/api/auth/login", app.Login)
@@ -29,7 +39,7 @@ func NewRouter(db *gorm.DB, cfg config.Config) http.Handler {
 	r.Group(func(protected chi.Router) {
 		protected.Use(middleware.RequireAdminDynamic(func() *gorm.DB {
 			return app.DB
-		}, cfg))
+		}, app.Cfg))
 		protected.Get("/api/auth/me", app.Me)
 		protected.Put("/api/auth/account", app.UpdateAccount)
 		protected.Route("/api/auth/admin-users", app.AdminUserRoutes)

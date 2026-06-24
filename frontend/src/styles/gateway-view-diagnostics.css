@@ -1,0 +1,64 @@
+.route-diagnosis {
+  display: grid;
+  gap: 14px;
+}
+
+.route-diagnosis__list {
+  display: grid;
+  gap: 10px;
+}
+
+.route-diagnosis__item {
+  border: 1px solid #e5e7eb;
+  border-left-width: 3px;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #ffffff;
+}
+
+.route-diagnosis__item--ok {
+  border-left-color: #22c55e;
+}
+
+.route-diagnosis__item--warning {
+  border-left-color: #f59e0b;
+}
+
+.route-diagnosis__item--error {
+  border-left-color: #ef4444;
+}
+
+.route-diagnosis__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.route-diagnosis__message {
+  margin-top: 6px;
+  color: #24334d;
+  font-size: 13px;
+}
+
+.route-diagnosis__detail {
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.tooltip-detail-list {
+  display: grid;
+  gap: 6px;
+  max-width: 360px;
+}
+
+.tooltip-detail-list strong {
+  display: inline-block;
+  margin-right: 6px;
+}
+
+.tooltip-detail-list span {
+  word-break: break-word;
+}

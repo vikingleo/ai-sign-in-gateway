@@ -191,3 +191,40 @@ func TestServeFrontendWebManifestContentType(t *testing.T) {
 		t.Fatal(".webmanifest should be treated as a static asset")
 	}
 }
+
+func TestServeFrontendDisablesIndexCache(t *testing.T) {
+	dist := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dist, "index.html"), []byte("index"), 0o600); err != nil {
+		t.Fatalf("write index: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Join(dist, "assets"), 0o755); err != nil {
+		t.Fatalf("create assets: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dist, "assets", "index.js"), []byte("console.log('ok')"), 0o600); err != nil {
+		t.Fatalf("write asset: %v", err)
+	}
+
+	for _, path := range []string{"/", "/overview"} {
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, path, nil)
+		serveFrontend(dist, rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("%s status=%d body=%q", path, rec.Code, rec.Body.String())
+		}
+		if got := rec.Header().Get("Cache-Control"); got != "no-cache" {
+			t.Fatalf("%s Cache-Control = %q, want no-cache", path, got)
+		}
+	}
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/assets/index.js", nil)
+	serveFrontend(dist, rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("asset status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	if got := rec.Header().Get("Cache-Control"); got != "" {
+		t.Fatalf("asset Cache-Control = %q, want empty", got)
+	}
+}

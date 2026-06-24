@@ -1,0 +1,92 @@
+@media (max-width: 1400px) {
+  .sites-toolbar {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 960px) {
+  .sites-list-toolbar {
+    align-items: stretch;
+  }
+
+  .sites-list-toolbar__search {
+    width: min(100%, 360px);
+  }
+
+  .api-key-dialog-item__head,
+  .api-key-dialog-item__paths,
+  .manual-api-key-editor {
+    grid-template-columns: 1fr;
+  }
+
+  .manual-api-key-editor__key,
+  .manual-api-key-editor__urls,
+  .manual-api-key-editor__generation,
+  .manual-api-key-editor__edit,
+  .manual-api-key-editor__action {
+    grid-column: 1 / -1;
+  }
+
+  .manual-api-key-editor__action .api-key-dialog-field__label--spacer {
+    display: none;
+  }
+
+  .api-key-dialog-item__head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 720px) {
+  .sites-page.sites-page {
+    --control-height: 40px;
+  }
+
+  .sites-page .table-fill--management .ant-table-body {
+    border-top: 1px solid var(--border-muted);
+    scrollbar-width: thin;
+  }
+
+  .sites-page .table-fill--management {
+    overflow: hidden;
+    position: relative;
+  }
+
+  .sites-page .table-fill--management .ant-table-thead > tr > th,
+  .sites-page .table-fill--management .ant-table-tbody > tr > td {
+    padding-inline: 8px !important;
+  }
+
+  .sites-page .table-fill--management::before {
+    content: "横向滑动查看表格";
+    display: block;
+    padding: 8px 10px;
+    border-top: 1px solid var(--border-muted);
+    border-radius: var(--radius-container) var(--radius-container) 0 0;
+    background: var(--bg-subtle);
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .sites-page .table-fill--management::after {
+    content: "";
+    position: absolute;
+    top: 35px;
+    right: 0;
+    bottom: 0;
+    width: 18px;
+    background: linear-gradient(to left, rgba(15, 23, 42, 0.08), rgba(15, 23, 42, 0));
+    border-bottom-right-radius: var(--radius-container);
+    pointer-events: none;
+  }
+
+  .sites-page.sites-page .sites-toolbar__segment .ant-btn,
+  .sites-page.sites-page .sites-toolbar__actions .ant-btn,
+  .sites-page.sites-page .sites-list-toolbar__btn.ant-btn {
+    height: var(--control-height) !important;
+    min-height: var(--control-height) !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+}

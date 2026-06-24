@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"archive/zip"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -20,6 +21,7 @@ import (
 	"ai-sign-in-gateway/internal/models"
 	"ai-sign-in-gateway/internal/runtimecontrol"
 	"ai-sign-in-gateway/internal/schemas"
+	"ai-sign-in-gateway/internal/seed"
 	"ai-sign-in-gateway/internal/services"
 	"github.com/go-chi/chi/v5"
 	"gorm.io/gorm"
@@ -46,8 +48,16 @@ func (a *App) systemSettings() (models.SystemSetting, error) {
 	return settings, err
 }
 
-func (a *App) GetSettings(w http.ResponseWriter, r *http.Request) {
+func (a *App) effectiveSystemSettings() (models.SystemSetting, error) {
 	settings, err := a.systemSettings()
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return defaultSystemSettings(a.Cfg), nil
+	}
+	return settings, err
+}
+
+func (a *App) GetSettings(w http.ResponseWriter, r *http.Request) {
+	settings, err := a.effectiveSystemSettings()
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -56,42 +66,49 @@ func (a *App) GetSettings(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) UpdateSettings(w http.ResponseWriter, r *http.Request) {
-	var payload schemas.SettingsUpdate
-	if err := httpx.Decode(r, &payload); err != nil {
+	payload, present, err := decodeSettingsUpdate(r)
+	if err != nil {
 		writeError(w, http.StatusBadRequest, "请求格式错误")
 		return
 	}
-	settings, err := a.systemSettings()
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		settings.ID = 1
-	} else if err != nil {
+	settings, err := a.effectiveSystemSettings()
+	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	settings.Timezone = payload.Timezone
-	settings.ScheduleEnabled = payload.ScheduleEnabled
-	settings.DailyRunTime = payload.DailyRunTime
-	settings.CheckinConcurrency = payload.CheckinConcurrency
-	settings.CheckinGlobalConcurrency = payload.CheckinGlobalConcurrency
-	settings.CheckinIntervalSeconds = payload.CheckinIntervalSeconds
-	settings.RetryCount = payload.RetryCount
-	settings.RequestTimeout = clampInt(payload.RequestTimeout, 5, 120, 20)
-	settings.OnlyEnabledSites = payload.OnlyEnabledSites
-	settings.DesktopKeepRunning = payload.DesktopKeepRunning
-	settings.DatabaseBackupEnabled = payload.DatabaseBackupEnabled
-	databaseBackupDir, err := normalizeRuntimeBackupDirInput(payload.DatabaseBackupDir)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "数据库备份目录无效: "+err.Error())
-		return
+	if present["timezone"] {
+		timezone, err := normalizeSettingsTimezone(payload.Timezone)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "时区无效")
+			return
+		}
+		settings.Timezone = timezone
 	}
-	settings.DatabaseBackupDir = databaseBackupDir
-	settings.DatabaseBackupIntervalMinutes = clampInt(payload.DatabaseBackupIntervalMinutes, 5, 10080, 1440)
-	settings.DatabaseBackupRetention = clampInt(payload.DatabaseBackupRetention, 1, 365, 7)
-	settings.LogRetentionDays = clampInt(payload.LogRetentionDays, 1, 365, services.DefaultLogRetentionDays)
-	activePricingSchemeID, customPricingSchemes := services.NormalizeGatewayPricingSettings(payload.GatewayPricingActiveSchemeID, payload.GatewayPricingSchemes)
-	settings.GatewayPricingActiveSchemeID = activePricingSchemeID
-	settings.GatewayPricingSchemes = services.EncodeGatewayPricingSchemes(customPricingSchemes)
-	settings.FeatureFlags = normalizeFeatureFlags(payload.FeatureFlags)
+	applySettingsUpdateFields(&settings, payload, present)
+	if present["database_backup_dir"] {
+		databaseBackupDir, err := normalizeRuntimeBackupDirInput(payload.DatabaseBackupDir)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "数据库备份目录无效: "+err.Error())
+			return
+		}
+		settings.DatabaseBackupDir = databaseBackupDir
+	}
+	if present["gateway_pricing_active_scheme_id"] || present["gateway_pricing_schemes"] {
+		activeID := settings.GatewayPricingActiveSchemeID
+		schemes := services.DecodeGatewayPricingSchemes(settings.GatewayPricingSchemes)
+		if present["gateway_pricing_active_scheme_id"] {
+			activeID = payload.GatewayPricingActiveSchemeID
+		}
+		if present["gateway_pricing_schemes"] {
+			schemes = payload.GatewayPricingSchemes
+		}
+		activePricingSchemeID, customPricingSchemes := services.NormalizeGatewayPricingSettings(activeID, schemes)
+		settings.GatewayPricingActiveSchemeID = activePricingSchemeID
+		settings.GatewayPricingSchemes = services.EncodeGatewayPricingSchemes(customPricingSchemes)
+	}
+	if present["feature_flags"] {
+		settings.FeatureFlags = normalizeFeatureFlags(payload.FeatureFlags)
+	}
 	if err := a.DB.Save(&settings).Error; err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -104,8 +121,152 @@ func (a *App) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, settingsResponse(settings))
 }
 
+const maxSettingsUpdateBodyBytes = 1 << 20
+
+func decodeSettingsUpdate(r *http.Request) (schemas.SettingsUpdate, map[string]bool, error) {
+	defer r.Body.Close()
+	body, err := io.ReadAll(io.LimitReader(r.Body, maxSettingsUpdateBodyBytes+1))
+	if err != nil {
+		return schemas.SettingsUpdate{}, nil, err
+	}
+	if len(body) > maxSettingsUpdateBodyBytes {
+		return schemas.SettingsUpdate{}, nil, errors.New("settings update payload too large")
+	}
+	present, err := settingsUpdateKeys(body)
+	if err != nil {
+		return schemas.SettingsUpdate{}, nil, err
+	}
+	var payload schemas.SettingsUpdate
+	if err := json.Unmarshal(body, &payload); err != nil {
+		return schemas.SettingsUpdate{}, nil, err
+	}
+	return payload, present, nil
+}
+
+func settingsUpdateKeys(body []byte) (map[string]bool, error) {
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(body, &raw); err != nil {
+		return nil, err
+	}
+	if raw == nil {
+		return nil, errors.New("settings update payload must be an object")
+	}
+	present := make(map[string]bool, len(raw))
+	for key := range raw {
+		present[key] = true
+	}
+	return present, nil
+}
+
+func defaultSystemSettings(cfg config.Config) models.SystemSetting {
+	timezone := strings.TrimSpace(cfg.SchedulerTimezone)
+	if timezone == "" {
+		timezone = "Asia/Shanghai"
+	}
+	return models.SystemSetting{
+		ID:                                 1,
+		Timezone:                           timezone,
+		ScheduleEnabled:                    true,
+		DailyRunTime:                       "09:00",
+		CheckinConcurrency:                 1,
+		CheckinGlobalConcurrency:           4,
+		CheckinIntervalSeconds:             1,
+		RetryCount:                         1,
+		RequestTimeout:                     20,
+		OnlyEnabledSites:                   true,
+		DatabaseBackupIntervalMinutes:      1440,
+		DatabaseBackupRetention:            7,
+		LogRetentionDays:                   services.DefaultLogRetentionDays,
+		GatewayPricingActiveSchemeID:       services.OfficialGatewayPricingSchemeID,
+		GatewayPricingSchemes:              "[]",
+		FeatureFlags:                       models.JSONMap{},
+		GatewayRouteStrategy:               "round_robin",
+		GatewayFailureThreshold:            3,
+		GatewayCooldownSeconds:             180,
+		GatewayRequestTimeout:              60,
+		GatewayMaxAttempts:                 0,
+		GatewayFailureRetryMode:            "retryable",
+		GatewayRouteConcurrencyLimit:       5,
+		GatewayConcurrencyTransferStrategy: "limit_only",
+		GatewayConcurrencyOverflowStrategy: "latency_first",
+		GatewaySmartLatencyBias:            1,
+		GatewaySmartConcurrencyBias:        1.5,
+		GatewaySmartFailureBias:            1,
+		GatewaySmartPriorityBias:           0.5,
+		GatewayAPIKey:                      strings.TrimSpace(cfg.GatewayAPIKey),
+		SiteGroupCatalog:                   "[]",
+	}
+}
+
+func applySettingsUpdateFields(settings *models.SystemSetting, payload schemas.SettingsUpdate, present map[string]bool) {
+	if present["schedule_enabled"] {
+		settings.ScheduleEnabled = payload.ScheduleEnabled
+	}
+	if present["daily_run_time"] {
+		settings.DailyRunTime = payload.DailyRunTime
+	}
+	if present["checkin_concurrency"] {
+		settings.CheckinConcurrency = payload.CheckinConcurrency
+	}
+	if present["checkin_global_concurrency"] {
+		settings.CheckinGlobalConcurrency = payload.CheckinGlobalConcurrency
+	}
+	if present["checkin_interval_seconds"] {
+		settings.CheckinIntervalSeconds = payload.CheckinIntervalSeconds
+	}
+	if present["retry_count"] {
+		settings.RetryCount = payload.RetryCount
+	}
+	if present["request_timeout"] {
+		settings.RequestTimeout = clampInt(payload.RequestTimeout, 5, 120, 20)
+	}
+	if present["only_enabled_sites"] {
+		settings.OnlyEnabledSites = payload.OnlyEnabledSites
+	}
+	if present["desktop_keep_running"] {
+		settings.DesktopKeepRunning = payload.DesktopKeepRunning
+	}
+	if present["database_backup_enabled"] {
+		settings.DatabaseBackupEnabled = payload.DatabaseBackupEnabled
+	}
+	if present["database_backup_interval_minutes"] {
+		settings.DatabaseBackupIntervalMinutes = clampInt(payload.DatabaseBackupIntervalMinutes, 5, 10080, 1440)
+	}
+	if present["database_backup_retention"] {
+		settings.DatabaseBackupRetention = clampInt(payload.DatabaseBackupRetention, 1, 365, 7)
+	}
+	if present["log_retention_days"] {
+		settings.LogRetentionDays = clampInt(payload.LogRetentionDays, 1, 365, services.DefaultLogRetentionDays)
+	}
+}
+
+func normalizeSettingsTimezone(value string) (string, error) {
+	timezone := strings.TrimSpace(value)
+	if timezone == "" {
+		timezone = "Asia/Shanghai"
+	}
+	if _, err := time.LoadLocation(timezone); err != nil {
+		return "", err
+	}
+	return timezone, nil
+}
+
 func (a *App) RunSchedulerNow(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "message": "Go 调度器接入中，已收到执行请求。"})
+	settings, err := a.checkinBatchSettings()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	runs, err := a.runCheckinBatch(manualCheckinContext(r.Context()), nil, settings.OnlyEnabledSites, "manual", settings)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	successCount, failedCount := checkinRunStatusCounts(runs)
+	writeJSON(w, http.StatusOK, map[string]string{
+		"status":  "ok",
+		"message": fmt.Sprintf("已执行一次签到：成功 %d，失败 %d。", successCount, failedCount),
+	})
 }
 
 func (a *App) OpenRuntimeURL(w http.ResponseWriter, r *http.Request) {
@@ -424,7 +585,7 @@ func (a *App) importRuntimeDatabaseFromFile(w http.ResponseWriter, sourcePath st
 		writeError(w, http.StatusInternalServerError, "复制数据库失败: "+err.Error())
 		return
 	}
-	if err := validateImportedDatabase(tmpPath); err != nil {
+	if err := validateImportedDatabase(tmpPath, a.Cfg); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -571,8 +732,13 @@ func (a *App) reopenDatabase(databasePath string) error {
 		_ = database.Close(newDB)
 		return err
 	}
+	if err := seed.EnsureSystemSettings(newDB, cfg); err != nil {
+		_ = database.Close(newDB)
+		return err
+	}
 	oldDB := a.DB
 	a.DB = newDB
+	a.Cfg = cfg
 	if oldDB != nil {
 		_ = database.Close(oldDB)
 	}
@@ -638,8 +804,8 @@ func validateSQLiteDatabaseFile(path string) error {
 	return nil
 }
 
-func validateImportedDatabase(path string) error {
-	cfg := config.Config{DatabaseURL: "sqlite:///" + filepath.ToSlash(path)}
+func validateImportedDatabase(path string, cfg config.Config) error {
+	cfg.DatabaseURL = "sqlite:///" + filepath.ToSlash(path)
 	db, err := database.Open(cfg)
 	if err != nil {
 		return fmt.Errorf("无法打开导入数据库: %w", err)
@@ -654,6 +820,9 @@ func validateImportedDatabase(path string) error {
 	}
 	if adminCount == 0 {
 		return fmt.Errorf("导入数据库没有管理员账号，无法重新登录")
+	}
+	if err := seed.EnsureSystemSettings(db, cfg); err != nil {
+		return fmt.Errorf("导入数据库初始化默认设置失败: %w", err)
 	}
 	return nil
 }

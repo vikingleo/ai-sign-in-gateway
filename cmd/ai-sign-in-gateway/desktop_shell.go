@@ -86,7 +86,7 @@ func runDesktopShell(ctx context.Context, rt desktopRuntime) error {
 	var retainService atomic.Bool
 	trayRun(func() {
 		setupTray(rt, &items, func() {
-			retainService.Store(desktopKeepRunningEnabled(rt.DB))
+			retainService.Store(desktopKeepRunningEnabled(rt.database()))
 			stopUI()
 			if !retainService.Load() {
 				stopService()
@@ -180,11 +180,11 @@ func setupTray(rt desktopRuntime, items *trayItems, exitApp func()) {
 			case <-refresh.ClickedCh:
 				updateTraySnapshot(rt, items)
 			case <-checkSites.ClickedCh:
-				runSiteConnectivityCheck(rt.DB, items)
+				runSiteConnectivityCheck(rt.database(), items)
 			case <-syncRoutes.ClickedCh:
-				runGatewayRouteSync(rt.DB, items)
+				runGatewayRouteSync(rt.database(), items)
 			case <-probeRoutes.ClickedCh:
-				runGatewayRouteProbe(rt.DB, items)
+				runGatewayRouteProbe(rt.database(), items)
 			case <-quit.ClickedCh:
 				exitApp()
 				trayQuit()
@@ -220,7 +220,7 @@ func refreshTrayLoop(ctx context.Context, rt desktopRuntime, items *trayItems) {
 }
 
 func updateTraySnapshot(rt desktopRuntime, items *trayItems) {
-	snapshot := collectTraySnapshot(rt.DB)
+	snapshot := collectTraySnapshot(rt.database())
 	items.summary.SetTitle(snapshot.Summary)
 	items.routes.SetTitle(snapshot.Routes)
 	items.traffic.SetTitle(snapshot.Traffic)
@@ -228,6 +228,14 @@ func updateTraySnapshot(rt desktopRuntime, items *trayItems) {
 }
 
 func collectTraySnapshot(db *gorm.DB) desktopTraySnapshot {
+	if db == nil {
+		return desktopTraySnapshot{
+			Summary: "网关统计: 数据库未连接",
+			Routes:  "路由池: 数据库未连接",
+			Traffic: "请求趋势: 数据库未连接",
+			Tooltip: "爱签网关\nai-sign-in-gateway\n数据库未连接",
+		}
+	}
 	var totalRoutes, healthyRoutes, openRoutes, disabledRoutes int64
 	_ = db.Model(&models.GatewayRouteState{}).Count(&totalRoutes).Error
 	_ = db.Model(&models.GatewayRouteState{}).Where("is_enabled = ? AND circuit_state = ?", true, "closed").Count(&healthyRoutes).Error
@@ -279,6 +287,10 @@ func collectTraySnapshot(db *gorm.DB) desktopTraySnapshot {
 }
 
 func runGatewayRouteSync(db *gorm.DB, items *trayItems) {
+	if db == nil {
+		items.lastAction.SetTitle("操作状态: 数据库未连接")
+		return
+	}
 	items.lastAction.SetTitle("操作状态: 正在同步路由...")
 	go func() {
 		count, err := services.SyncGatewayRoutes(db)
@@ -293,6 +305,10 @@ func runGatewayRouteSync(db *gorm.DB, items *trayItems) {
 }
 
 func runGatewayRouteProbe(db *gorm.DB, items *trayItems) {
+	if db == nil {
+		items.lastAction.SetTitle("操作状态: 数据库未连接")
+		return
+	}
 	items.lastAction.SetTitle("操作状态: 正在探测路由...")
 	go func() {
 		routes, err := services.ListGatewayRoutes(db, "", false)
@@ -318,6 +334,9 @@ func runGatewayRouteProbe(db *gorm.DB, items *trayItems) {
 }
 
 func gatewayProbeTimeout(db *gorm.DB) int {
+	if db == nil {
+		return 20
+	}
 	var settings models.SystemSetting
 	if err := db.First(&settings, 1).Error; err != nil || settings.GatewayRequestTimeout <= 0 {
 		return 20
@@ -326,6 +345,11 @@ func gatewayProbeTimeout(db *gorm.DB) int {
 }
 
 func runSiteConnectivityCheck(db *gorm.DB, items *trayItems) {
+	if db == nil {
+		items.connectivity.SetTitle("站点连通率: 数据库未连接")
+		items.lastAction.SetTitle("操作状态: 数据库未连接")
+		return
+	}
 	items.connectivity.SetTitle("站点连通率: 检测中...")
 	items.lastAction.SetTitle("操作状态: 正在检测站点...")
 	go func() {

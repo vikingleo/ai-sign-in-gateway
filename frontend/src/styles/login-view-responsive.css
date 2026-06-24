@@ -1,0 +1,153 @@
+@media (max-width: 1280px) {
+  .login-page {
+    padding: 20px;
+  }
+
+  .login-main {
+    align-items: stretch;
+    gap: 20px;
+  }
+
+  .login-story {
+    grid-template-columns: 1fr;
+  }
+
+  .metric-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .login-copy h1 {
+    font-size: 40px;
+  }
+
+  .login-side {
+    flex-basis: 420px;
+    min-width: 360px;
+  }
+}
+
+@media (max-width: 880px) {
+  .login-screen {
+    height: auto;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .login-page {
+    height: auto;
+    min-height: 100dvh;
+    padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+    overflow: visible;
+  }
+
+  .login-header,
+  .login-footer,
+  .login-main {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .security-line,
+  .login-footer {
+    font-size: 12px;
+  }
+
+  .login-footer {
+    align-items: center;
+    gap: 6px;
+    text-align: center;
+  }
+
+  .brand-lockup {
+    flex-wrap: wrap;
+  }
+
+  .brand-lockup strong {
+    font-size: 22px;
+  }
+
+  .login-main {
+    gap: 12px;
+    min-height: 0;
+    margin-top: 14px;
+    overflow: visible;
+  }
+
+  .login-copy h1 {
+    font-size: 28px;
+    line-height: 1.16;
+  }
+
+  .login-copy p,
+  .capability-item p {
+    font-size: 14px;
+  }
+
+  .login-story {
+    display: none;
+  }
+
+  .capability-list,
+  .metric-panel {
+    margin-top: 24px;
+  }
+
+  .metric-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .metric-card {
+    min-height: auto;
+  }
+
+  .login-side {
+    flex: 1 1 auto;
+    gap: 12px;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .login-card {
+    flex: 0 0 auto;
+    width: 100%;
+    padding: 22px 20px;
+    border-radius: 8px;
+  }
+
+  .login-options {
+    margin-bottom: 18px;
+  }
+
+  .login-card__head {
+    gap: 14px;
+  }
+
+  .login-card__head h2 {
+    margin-top: 6px;
+    font-size: 24px;
+  }
+
+  .brand-badge--large {
+    width: 48px;
+    height: 56px;
+    font-size: 16px;
+  }
+
+  .invite-entry {
+    flex: 0 0 auto;
+  }
+
+  .invite-list {
+    max-height: calc(80vh - 142px);
+  }
+
+  .invite-item {
+    grid-template-columns: 1fr;
+  }
+
+  .invite-item__actions {
+    justify-content: flex-start;
+  }
+}

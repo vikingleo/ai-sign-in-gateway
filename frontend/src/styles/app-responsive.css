@@ -1,0 +1,131 @@
+/* Mobile collapsed navigation keeps touch targets large and spacing predictable. */
+:root {
+  --sider-collapsed-width-mobile: 56px;
+  --sider-brand-min-height-mobile: 56px;
+  --sider-brand-padding-vertical-mobile: 10px;
+  --sider-brand-padding-horizontal-mobile: 6px;
+  --sider-brand-mark-size-mobile: 36px;
+  --sider-brand-mark-font-size-mobile: 17px;
+  --sider-menu-padding-vertical-mobile: 10px;
+  --sider-menu-padding-horizontal-mobile: 6px;
+  --sider-menu-item-size-mobile: 44px;
+  --sider-menu-item-margin-mobile: 4px;
+  --sider-icon-size-mobile: 17px;
+  --sider-collapse-button-size-mobile: 40px;
+}
+
+@media (max-width: 1200px) {
+  .form-block__head,
+  .page-toolbar,
+  .app-header {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: flex-start;
+  }
+
+  .site-list-item__meta,
+  .stack-list-item__meta,
+  .checkin-site-row {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 900px) {
+  .app-sider.ant-layout-sider-collapsed {
+    flex: 0 0 var(--sider-collapsed-width-mobile) !important;
+    max-width: var(--sider-collapsed-width-mobile) !important;
+    min-width: var(--sider-collapsed-width-mobile) !important;
+    width: var(--sider-collapsed-width-mobile) !important;
+  }
+
+  .app-sider.ant-layout-sider-collapsed .brand-panel {
+    justify-content: center;
+    min-height: var(--sider-brand-min-height-mobile);
+    padding: var(--sider-brand-padding-vertical-mobile) var(--sider-brand-padding-horizontal-mobile);
+  }
+
+  .app-sider.ant-layout-sider-collapsed .brand-mark {
+    width: var(--sider-brand-mark-size-mobile);
+    height: var(--sider-brand-mark-size-mobile);
+    font-size: var(--sider-brand-mark-font-size-mobile);
+  }
+
+  .app-sider.ant-layout-sider-collapsed .app-menu {
+    padding: var(--sider-menu-padding-vertical-mobile) var(--sider-menu-padding-horizontal-mobile);
+  }
+
+  .app-sider.ant-layout-sider-collapsed .app-menu.ant-menu .ant-menu-item {
+    width: var(--sider-menu-item-size-mobile);
+    height: var(--sider-menu-item-size-mobile);
+    margin: var(--sider-menu-item-margin-mobile) auto;
+    padding-inline: 0 !important;
+    line-height: var(--sider-menu-item-size-mobile);
+  }
+
+  .app-sider.ant-layout-sider-collapsed .app-menu.ant-menu .ant-menu-item .anticon {
+    font-size: var(--sider-icon-size-mobile);
+  }
+
+  .app-sider.ant-layout-sider-collapsed .sider-collapse-button.ant-btn {
+    width: var(--sider-collapse-button-size-mobile);
+    height: var(--sider-collapse-button-size-mobile);
+  }
+
+  .app-content {
+    padding: 8px 8px calc(10px + env(safe-area-inset-bottom, 0px));
+    overflow-y: auto;
+  }
+
+  .app-header {
+    padding: 10px 12px;
+  }
+
+  .login-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .page-stack--fit,
+  .page-stack--dashboard,
+  .page-stack--checkins,
+  .page-grid-fill.ant-row,
+  .page-grid-fill.ant-row > .ant-col,
+  .page-column,
+  .admin-card--fill,
+  .admin-card--fill .ant-card-body,
+  .card-shell,
+  .card-form,
+  .card-scroll,
+  .table-fill {
+    min-height: auto;
+    height: auto;
+  }
+
+  .card-scroll,
+  .table-fill .ant-table-wrapper .ant-table-body {
+    overflow: visible !important;
+  }
+
+  .card-actions,
+  .page-toolbar--actions {
+    position: static;
+    background: transparent;
+  }
+
+  .queue-timeline {
+    grid-template-columns: 1fr;
+  }
+
+  .site-summary__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .site-summary__hero {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 640px) {
+  .invite-dialog__control,
+  .invite-dialog__control--code {
+    grid-template-columns: 1fr;
+  }
+}

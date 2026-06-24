@@ -10,7 +10,11 @@ import (
 )
 
 func (a *App) Features(w http.ResponseWriter, r *http.Request) {
-	settings, _ := a.systemSettings()
+	settings, err := a.effectiveSystemSettings()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 	writeJSON(w, http.StatusOK, featureResponses(settings))
 }
 
@@ -43,7 +47,7 @@ func (a *App) requireFeatureEnabled(key string) func(http.Handler) http.Handler 
 }
 
 func (a *App) isFeatureEnabled(key string) bool {
-	settings, err := a.systemSettings()
+	settings, err := a.effectiveSystemSettings()
 	if err != nil {
 		return false
 	}

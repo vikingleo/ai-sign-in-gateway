@@ -1,0 +1,56 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
+
+const componentPath = new URL('../src/components/gateway/GatewayLogsDrawer.vue', import.meta.url)
+const hostPath = new URL('../src/components/gateway/GatewayOverlayHost.vue', import.meta.url)
+
+test('gateway logs drawer declares the shared log drawer UI contract', async () => {
+  const source = await readFile(componentPath, 'utf8')
+
+  assert.match(source, /import \{ computed \} from 'vue'/)
+  assert.match(source, /const open = defineModel<boolean>\('open'/)
+  assert.match(source, /const search = defineModel<string>\('search'/)
+  assert.match(source, /columns: ColumnsType<GatewayLog>/)
+  assert.match(source, /logs: GatewayLog\[\]/)
+  assert.match(source, /loading\?: boolean/)
+  assert.match(source, /requestMethodColor: \(method: string\) => string/)
+  assert.match(source, /function logMatchesSearch\(log: GatewayLog, keyword: string\)/)
+  assert.match(source, /const filteredLogs = computed\(\(\) => \{/)
+  assert.match(source, /<a-drawer/)
+  assert.match(source, /v-model:open="open"/)
+  assert.match(source, /v-model:value="search"/)
+  assert.match(source, /class="table-fill table-fill--management table-fill--drawer"/)
+  assert.match(source, /<a-table/)
+  assert.match(source, /:data-source="filteredLogs"/)
+  assert.match(source, /GatewayLogStatusCell/)
+  assert.match(source, /GatewayLogRequestCell/)
+  assert.match(source, /GatewayLogRouteCell/)
+  assert.match(source, /GatewayLogModelCell/)
+  assert.match(source, /GatewayLogUserAgentCell/)
+  assert.match(source, /GatewayLogLatencyCell/)
+  assert.match(source, /asLog\(record\)\.attempt_index/)
+})
+
+test('GatewayOverlayHost delegates both log drawers to the shared gateway logs drawer', async () => {
+  const source = await readFile(hostPath, 'utf8')
+
+  assert.match(source, /import GatewayLogsDrawer from '\.\/GatewayLogsDrawer\.vue'/)
+  assert.match(source, /v-model:open="logsDrawerOpen"/)
+  assert.match(source, /v-model:search="logSearch"/)
+  assert.match(source, /title="最近请求"/)
+  assert.match(source, /:logs="logs"/)
+  assert.match(source, /v-model:open="routeLogsDrawerOpen"/)
+  assert.match(source, /v-model:search="routeLogSearch"/)
+  assert.match(source, /:title="routeLogsTitle"/)
+  assert.match(source, /:logs="routeLogs"/)
+  assert.match(source, /:loading="routeLogsLoading"/)
+  assert.doesNotMatch(source, /<a-drawer\s+v-model:open="logsDrawerOpen"/)
+  assert.doesNotMatch(source, /<a-drawer\s+v-model:open="routeLogsDrawerOpen"/)
+  assert.doesNotMatch(source, /GatewayLogStatusCell/)
+  assert.doesNotMatch(source, /GatewayLogRequestCell/)
+  assert.doesNotMatch(source, /GatewayLogRouteCell/)
+  assert.doesNotMatch(source, /GatewayLogModelCell/)
+  assert.doesNotMatch(source, /GatewayLogUserAgentCell/)
+  assert.doesNotMatch(source, /GatewayLogLatencyCell/)
+})

@@ -1,0 +1,180 @@
+.account-meta {
+  margin-bottom: 12px;
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.account-meta strong {
+  margin-left: 4px;
+  color: #24334d;
+}
+
+.account-hint {
+  display: block;
+  margin-top: 8px;
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.admin-users-panel {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.admin-users-create {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) minmax(160px, 1fr) 140px auto auto;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+
+.admin-users-create .ant-input,
+.admin-users-create .ant-input-affix-wrapper,
+.admin-users-create .ant-select,
+.admin-users-create .ant-btn {
+  width: 100%;
+  min-width: 0;
+}
+
+.admin-users-create .app-switch {
+  justify-self: start;
+}
+
+.admin-users-table {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.admin-users-table .ant-table-container,
+.admin-users-table .ant-table-content {
+  width: 100%;
+  max-width: 100%;
+}
+
+.admin-users-table .ant-table-content {
+  overflow-x: auto !important;
+}
+
+.admin-users-table .ant-table-cell {
+  vertical-align: middle;
+}
+
+.settings-security-alert {
+  margin-bottom: 14px;
+}
+
+.runtime-config-panel {
+  margin-top: 14px;
+}
+
+.runtime-config-loader {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+.runtime-config-loader .ant-input {
+  width: 100%;
+  min-width: 0;
+}
+
+.runtime-config-loader .ant-btn {
+  width: auto;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.runtime-database-file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.runtime-backup-settings {
+  width: 100%;
+}
+
+.runtime-backup-settings .ant-space-item,
+.runtime-backup-settings .ant-input,
+.runtime-backup-settings .ant-row {
+  width: 100%;
+}
+
+.backup-dir-label {
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.backup-table {
+  margin-top: 12px;
+}
+
+.backup-table .ant-table-cell {
+  overflow-wrap: anywhere;
+}
+
+.pricing-grid {
+  display: grid;
+  grid-template-columns: minmax(110px, 0.75fr) minmax(140px, 1.1fr) minmax(130px, 1fr) repeat(4, minmax(96px, 0.75fr)) 72px;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+  min-width: 0;
+}
+
+.pricing-grid--head {
+  margin-top: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.pricing-grid .ant-tag {
+  margin-inline-end: 0;
+}
+
+@media (max-width: 680px) {
+  .runtime-config-loader {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .runtime-config-loader .ant-btn {
+    width: 100%;
+  }
+
+  .pricing-grid {
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .pricing-grid--head {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .admin-users-create {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .admin-users-create {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-users-create .ant-btn {
+    justify-content: center;
+  }
+}

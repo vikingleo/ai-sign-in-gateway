@@ -1,0 +1,219 @@
+.overview-screen,
+.overview-metric-card .ant-card-body,
+.overview-panel .ant-card-body,
+.overview-side-stack,
+.overview-feed,
+.overview-schedule-list {
+  display: grid;
+}
+
+.overview-screen {
+  gap: var(--content-gutter);
+  min-width: 0;
+}
+
+.overview-page-head,
+.overview-metric-card__head,
+.overview-panel__head,
+.overview-feed__title {
+  display: flex;
+  min-width: 0;
+}
+
+.overview-page-head {
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--rhythm-2);
+}
+
+.overview-page-head h2,
+.overview-panel__head h3 {
+  margin: 0;
+  color: var(--text-main);
+  line-height: 1.25;
+}
+
+.overview-page-head h2 {
+  font-size: 24px;
+}
+
+.overview-page-head p,
+.overview-panel__head p,
+.overview-panel__head > span,
+.overview-metric-card p,
+.overview-feed__text,
+.overview-feed__time,
+.overview-schedule-item span {
+  color: var(--text-muted);
+}
+
+.overview-page-head p {
+  margin: 4px 0 0;
+  font-size: 13px;
+}
+
+.overview-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--content-gutter);
+}
+
+.overview-metric-card.ant-card,
+.overview-panel.ant-card {
+  overflow: hidden;
+  border: 1px solid var(--border-soft) !important;
+  border-radius: var(--radius-container) !important;
+  background: var(--bg-panel) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+.overview-metric-card.ant-card {
+  position: relative;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.overview-metric-card.ant-card:hover {
+  border-color: rgba(37, 99, 235, 0.26) !important;
+  box-shadow: var(--shadow-card-hover) !important;
+  transform: translateY(-1px);
+}
+
+.overview-metric-card.ant-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--accent);
+}
+
+.overview-metric-card--primary.ant-card {
+  background: var(--bg-panel) !important;
+}
+
+.overview-metric-card .ant-card-body {
+  align-content: start;
+  gap: 7px;
+  min-height: 108px;
+  padding: 14px 16px 14px 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.overview-metric-card__head {
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  min-height: 28px;
+}
+
+.overview-metric-card__icon,
+.overview-schedule-item__icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-control);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.overview-metric-card__icon {
+  flex: 0 0 auto;
+}
+
+.overview-metric-card--success .overview-metric-card__icon {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.overview-metric-card--warning .overview-metric-card__icon {
+  background: var(--warning-soft);
+  color: #a16207;
+}
+
+.overview-metric-card__title,
+.overview-feed__title strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.overview-metric-card__title {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 16px;
+}
+
+.overview-metric-card__value {
+  color: var(--text-main);
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.15;
+  font-feature-settings: 'tnum';
+}
+
+.overview-metric-card__value .ant-statistic-content {
+  color: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.overview-metric-card p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.overview-main-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.8fr);
+  gap: var(--content-gutter);
+  align-items: stretch;
+  min-width: 0;
+}
+
+.overview-side-stack {
+  gap: var(--content-gutter);
+  min-width: 0;
+}
+
+.overview-panel .ant-card-body {
+  gap: 0;
+  padding: 0;
+}
+
+.overview-panel__head {
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--rhythm-2);
+  padding: var(--rhythm-3);
+  border-bottom: 1px solid var(--border-muted);
+}
+
+.overview-panel__head h3 {
+  font-size: 16px;
+}
+
+.overview-panel__head p,
+.overview-panel__head > span {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.overview-panel__head > span {
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+@media (max-width: 1180px) {
+  .overview-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .overview-main-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -16,7 +16,8 @@ import (
 )
 
 type DatabaseBackupRunner struct {
-	DatabasePath string
+	DatabasePath         string
+	DatabasePathProvider func() string
 }
 
 type DatabaseBackupFile struct {
@@ -31,17 +32,22 @@ func RunDatabaseBackupLoop(ctx context.Context, databasePath string) {
 	runner.Run(ctx)
 }
 
+func RunDatabaseBackupLoopWithProvider(ctx context.Context, provider func() string) {
+	runner := DatabaseBackupRunner{DatabasePathProvider: provider}
+	runner.Run(ctx)
+}
+
 func (r DatabaseBackupRunner) Run(ctx context.Context) {
-	if strings.TrimSpace(r.DatabasePath) == "" {
+	if strings.TrimSpace(r.currentDatabasePath()) == "" && r.DatabasePathProvider == nil {
 		return
 	}
 	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
 
-	var lastBackup time.Time
+	lastBackups := map[string]time.Time{}
 	for {
-		if r.shouldRun(&lastBackup) {
-			lastBackup = time.Now()
+		if databaseKey, ok := r.shouldRun(lastBackups); ok {
+			lastBackups[databaseKey] = time.Now()
 		}
 		select {
 		case <-ctx.Done():
@@ -51,30 +57,60 @@ func (r DatabaseBackupRunner) Run(ctx context.Context) {
 	}
 }
 
-func (r DatabaseBackupRunner) shouldRun(lastBackup *time.Time) bool {
-	settings, err := r.loadSettings()
+func (r DatabaseBackupRunner) shouldRun(lastBackups map[string]time.Time) (string, bool) {
+	runner := r.withCurrentDatabasePath()
+	if strings.TrimSpace(runner.DatabasePath) == "" {
+		return "", false
+	}
+	databaseKey := backupDatabaseKey(runner.DatabasePath)
+	settings, err := runner.loadSettings()
 	if err != nil {
 		log.Printf("自动备份数据库: 读取设置失败: %v", err)
-		return false
+		return databaseKey, false
 	}
 	if !settings.DatabaseBackupEnabled {
-		return false
+		return databaseKey, false
 	}
-	backupDir, err := r.ResolveBackupDir(settings.DatabaseBackupDir)
+	backupDir, err := runner.ResolveBackupDir(settings.DatabaseBackupDir)
 	if err != nil {
 		log.Printf("自动备份数据库: 备份目录无效: %v", err)
-		return false
+		return databaseKey, false
 	}
 	interval := time.Duration(nonZeroInt(settings.DatabaseBackupIntervalMinutes, 1440)) * time.Minute
-	if !lastBackup.IsZero() && time.Since(*lastBackup) < interval {
-		return false
+	lastBackup := lastBackups[databaseKey]
+	if !lastBackup.IsZero() && time.Since(lastBackup) < interval {
+		return databaseKey, false
 	}
-	if err := r.BackupTo(backupDir, nonZeroInt(settings.DatabaseBackupRetention, 7)); err != nil {
+	if err := runner.BackupTo(backupDir, nonZeroInt(settings.DatabaseBackupRetention, 7)); err != nil {
 		log.Printf("自动备份数据库: 执行失败: %v", err)
-		return false
+		return databaseKey, false
 	}
 	log.Printf("自动备份数据库: 已备份到 %s", backupDir)
-	return true
+	return databaseKey, true
+}
+
+func (r DatabaseBackupRunner) withCurrentDatabasePath() DatabaseBackupRunner {
+	r.DatabasePath = r.currentDatabasePath()
+	r.DatabasePathProvider = nil
+	return r
+}
+
+func (r DatabaseBackupRunner) currentDatabasePath() string {
+	if r.DatabasePathProvider != nil {
+		if path := strings.TrimSpace(r.DatabasePathProvider()); path != "" {
+			return path
+		}
+	}
+	return r.DatabasePath
+}
+
+func backupDatabaseKey(path string) string {
+	cleaned := filepath.Clean(strings.TrimSpace(path))
+	absolute, err := filepath.Abs(cleaned)
+	if err == nil {
+		return absolute
+	}
+	return cleaned
 }
 
 func (r DatabaseBackupRunner) BackupTo(backupDir string, retention int) error {

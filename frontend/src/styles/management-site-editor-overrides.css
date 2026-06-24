@@ -1,0 +1,74 @@
+.site-editor-modal.site-editor-modal .site-editor-card__art,
+.site-editor-modal.site-editor-modal .site-editor-section-head__badge {
+  display: none !important;
+}
+
+.site-editor-modal.site-editor-modal .ant-modal-content,
+.site-editor-modal.site-editor-modal .site-editor-modal__frame {
+  overflow: hidden !important;
+  background: var(--bg-panel) !important;
+}
+
+.site-editor-modal.site-editor-modal .site-editor-modal__body {
+  padding: 16px !important;
+  background: var(--bg-subtle) !important;
+}
+
+.site-editor-modal.site-editor-modal .site-editor-modal__footer {
+  padding: 12px 16px !important;
+  border-top: 1px solid var(--border-muted) !important;
+  background: var(--bg-panel) !important;
+  backdrop-filter: none !important;
+}
+
+.site-editor-modal.site-editor-modal .site-editor-card__content {
+  padding: 16px !important;
+}
+
+.site-editor-modal.site-editor-modal .site-editor-shell .ant-input,
+.site-editor-modal.site-editor-modal .site-editor-shell .ant-input-affix-wrapper,
+.site-editor-modal.site-editor-modal .site-editor-shell .ant-input-number,
+.site-editor-modal.site-editor-modal .site-editor-shell .ant-select-selector,
+.site-editor-modal.site-editor-modal .site-editor-shell textarea.ant-input {
+  border-color: var(--border-soft) !important;
+  border-radius: var(--radius-control) !important;
+  background: var(--bg-panel) !important;
+  box-shadow: none !important;
+}
+
+.site-editor-modal.site-editor-modal .site-editor-shell .ant-input:not(textarea),
+.site-editor-modal.site-editor-modal .site-editor-shell .ant-input-affix-wrapper,
+.site-editor-modal.site-editor-modal .site-editor-shell .ant-input-number,
+.site-editor-modal.site-editor-modal .site-editor-shell .ant-select-single .ant-select-selector {
+  height: var(--control-height-comfort) !important;
+  min-height: var(--control-height-comfort) !important;
+}
+
+.site-editor-modal.site-editor-modal .site-editor-shell .ant-input-affix-wrapper .ant-input {
+  height: auto !important;
+  min-height: 0 !important;
+  line-height: 1.35 !important;
+}
+
+.site-editor-modal.site-editor-modal .site-editor-shell textarea.ant-input {
+  height: auto !important;
+  min-height: 124px !important;
+  line-height: 1.5 !important;
+}
+
+.site-editor-modal.site-editor-modal .site-editor-column--config textarea.ant-input {
+  min-height: 168px !important;
+}
+
+.site-editor-modal.site-editor-modal .site-editor-grid--relay .site-editor-column--config textarea.ant-input {
+  min-height: 188px !important;
+}
+
+.site-editor-modal.site-editor-modal .site-editor-storage-grid textarea.ant-input {
+  min-height: 220px !important;
+}
+
+.site-editor-modal.site-editor-modal .site-editor-shell .ant-btn,
+.site-editor-modal.site-editor-modal .site-editor-modal__close {
+  border-radius: var(--radius-control) !important;
+}

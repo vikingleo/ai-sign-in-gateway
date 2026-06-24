@@ -4,7 +4,7 @@ export function formatBalance(balance: number | null | undefined, unit?: string 
   }
 
   const value = new Intl.NumberFormat('zh-CN', {
-    maximumFractionDigits: 2,
+    maximumFractionDigits: 4,
   }).format(balance)
 
   const normalizedUnit = normalizeBalanceUnit(unit)

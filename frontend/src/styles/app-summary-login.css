@@ -1,0 +1,225 @@
+.site-summary {
+  display: grid;
+  gap: 14px;
+}
+
+.site-summary__hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.site-summary__eyebrow {
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.site-summary h3 {
+  margin: 6px 0 0;
+  font-size: 1.15rem;
+  line-height: 1.15;
+}
+
+.site-summary__hero p,
+.site-summary__note {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.site-summary__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.summary-metric {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-control);
+  background: var(--bg-panel);
+}
+
+.summary-metric span {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.summary-metric strong {
+  font-size: 0.95rem;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.site-summary__actions {
+  padding-top: 2px;
+}
+
+.queue-timeline--stacked {
+  grid-template-columns: 1fr;
+}
+
+.drawer-form-shell {
+  padding-right: 4px;
+}
+
+.drawer-editor-grid {
+  align-items: start;
+}
+
+.drawer-editor-column {
+  display: grid;
+  gap: var(--content-gutter);
+}
+
+.form-block--sticky {
+  position: sticky;
+  top: 0;
+}
+
+.drawer-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.form-block--elevated {
+  background: var(--bg-muted);
+}
+
+.participation-cell {
+  display: grid;
+  gap: 4px;
+}
+
+.feedback-pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 13px;
+}
+
+.response-preview {
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-container);
+  background: var(--bg-muted);
+  color: #24334d;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.response-preview--light {
+  background: var(--bg-muted);
+  border: 1px solid var(--border-soft);
+  color: #24334d;
+}
+
+.totp-code {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.invite-dialog {
+  display: grid;
+  gap: 14px;
+}
+
+.invite-dialog__grid {
+  display: grid;
+  gap: 14px;
+}
+
+.invite-dialog__field {
+  display: grid;
+  gap: 6px;
+}
+
+.invite-dialog__label {
+  color: #344054;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.invite-dialog__control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.invite-dialog__control--code {
+  grid-template-columns: minmax(0, 220px) auto;
+}
+
+.invite-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.login-screen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: var(--bg-page);
+}
+
+.login-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 390px);
+  gap: 18px;
+  align-items: stretch;
+  width: min(920px, 100%);
+}
+
+.login-hero > :first-child {
+  padding: 18px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-container);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.login-kicker {
+  display: inline-block;
+  margin-bottom: 10px;
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.login-hero h1 {
+  font-size: 38px;
+  line-height: 1.08;
+}
+
+.login-hero p {
+  max-width: 620px;
+  margin: 10px 0 0;
+  line-height: 1.55;
+}
+
+.login-note {
+  margin-top: 14px;
+  display: grid;
+  gap: 2px;
+}
+
+.login-note p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}

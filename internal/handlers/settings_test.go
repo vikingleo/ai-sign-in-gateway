@@ -106,6 +106,37 @@ func TestGetSettingsIncludesRuntimeInfo(t *testing.T) {
 	}
 }
 
+func TestGetSettingsUsesDefaultsWhenSettingsRowIsMissing(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open("file:settings-get-missing-row-defaults?mode=memory&cache=shared"), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	if err := db.AutoMigrate(models.All()...); err != nil {
+		t.Fatalf("auto migrate: %v", err)
+	}
+
+	recorder := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/api/settings", nil)
+	(&App{DB: db, Cfg: config.Config{SchedulerTimezone: "UTC", GatewayAPIKey: "gateway-key"}}).GetSettings(recorder, req)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d body = %s", recorder.Code, recorder.Body.String())
+	}
+	var response map[string]any
+	if err := json.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if response["timezone"] != "UTC" {
+		t.Fatalf("timezone = %v", response["timezone"])
+	}
+	if response["request_timeout"] != float64(20) {
+		t.Fatalf("request_timeout = %v", response["request_timeout"])
+	}
+	if warnings, ok := response["security_warnings"].([]any); !ok || len(warnings) != 1 {
+		t.Fatalf("security_warnings = %#v", response["security_warnings"])
+	}
+}
+
 func TestUpdateSettingsPersistsLogRetentionDaysAndPrunesOldLogs(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open("file:settings-log-retention?mode=memory&cache=shared"), &gorm.Config{})
 	if err != nil {
@@ -185,6 +216,221 @@ func TestUpdateSettingsPersistsLogRetentionDaysAndPrunesOldLogs(t *testing.T) {
 	if gatewayCount != 1 {
 		t.Fatalf("gateway log count = %d, want 1", gatewayCount)
 	}
+}
+
+func TestUpdateSettingsPreservesFieldsMissingFromPartialPayload(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open("file:settings-partial-update?mode=memory&cache=shared"), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	if err := db.AutoMigrate(models.All()...); err != nil {
+		t.Fatalf("auto migrate: %v", err)
+	}
+	if err := db.Create(&models.SystemSetting{
+		ID:                            1,
+		Timezone:                      "Asia/Shanghai",
+		ScheduleEnabled:               true,
+		DailyRunTime:                  "09:00",
+		CheckinConcurrency:            2,
+		CheckinGlobalConcurrency:      8,
+		CheckinIntervalSeconds:        3,
+		RetryCount:                    4,
+		RequestTimeout:                30,
+		OnlyEnabledSites:              true,
+		DesktopKeepRunning:            true,
+		DatabaseBackupEnabled:         true,
+		DatabaseBackupDir:             "/tmp/backups",
+		DatabaseBackupIntervalMinutes: 720,
+		DatabaseBackupRetention:       14,
+		LogRetentionDays:              9,
+		GatewayPricingActiveSchemeID:  "official",
+		GatewayPricingSchemes:         "[]",
+		FeatureFlags:                  models.JSONMap{"gateway": true},
+	}).Error; err != nil {
+		t.Fatalf("create settings: %v", err)
+	}
+	body, err := json.Marshal(map[string]any{"log_retention_days": 11})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	recorder := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPut, "/api/settings", bytes.NewReader(body))
+	(&App{DB: db}).UpdateSettings(recorder, req)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d body = %s", recorder.Code, recorder.Body.String())
+	}
+	var settings models.SystemSetting
+	if err := db.First(&settings, 1).Error; err != nil {
+		t.Fatal(err)
+	}
+	if settings.LogRetentionDays != 11 {
+		t.Fatalf("log retention days = %d, want 11", settings.LogRetentionDays)
+	}
+	if !settings.ScheduleEnabled || !settings.DesktopKeepRunning || !settings.DatabaseBackupEnabled {
+		t.Fatalf("bool settings were reset: schedule=%v desktop=%v backup=%v", settings.ScheduleEnabled, settings.DesktopKeepRunning, settings.DatabaseBackupEnabled)
+	}
+	if settings.RequestTimeout != 30 || settings.DatabaseBackupIntervalMinutes != 720 || settings.DatabaseBackupRetention != 14 {
+		t.Fatalf("numeric settings changed: timeout=%d interval=%d retention=%d", settings.RequestTimeout, settings.DatabaseBackupIntervalMinutes, settings.DatabaseBackupRetention)
+	}
+	if settings.DatabaseBackupDir != "/tmp/backups" {
+		t.Fatalf("backup dir = %q", settings.DatabaseBackupDir)
+	}
+	if enabled, ok := settings.FeatureFlags["gateway"].(bool); !ok || !enabled {
+		t.Fatalf("feature flags = %#v", settings.FeatureFlags)
+	}
+}
+
+func TestUpdateSettingsUsesConfiguredTimezoneWhenSettingsRowIsMissing(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open("file:settings-missing-row-defaults?mode=memory&cache=shared"), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	if err := db.AutoMigrate(models.All()...); err != nil {
+		t.Fatalf("auto migrate: %v", err)
+	}
+	body, err := json.Marshal(map[string]any{"log_retention_days": 11})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	recorder := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPut, "/api/settings", bytes.NewReader(body))
+	(&App{DB: db, Cfg: config.Config{SchedulerTimezone: "UTC"}}).UpdateSettings(recorder, req)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d body = %s", recorder.Code, recorder.Body.String())
+	}
+	var settings models.SystemSetting
+	if err := db.First(&settings, 1).Error; err != nil {
+		t.Fatal(err)
+	}
+	if settings.Timezone != "UTC" {
+		t.Fatalf("timezone = %q, want UTC", settings.Timezone)
+	}
+	if settings.LogRetentionDays != 11 {
+		t.Fatalf("log retention days = %d, want 11", settings.LogRetentionDays)
+	}
+}
+
+func TestUpdateSettingsRejectsInvalidTimezone(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open("file:settings-invalid-timezone?mode=memory&cache=shared"), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	if err := db.AutoMigrate(models.All()...); err != nil {
+		t.Fatalf("auto migrate: %v", err)
+	}
+	if err := db.Create(&models.SystemSetting{ID: 1, Timezone: "Asia/Shanghai"}).Error; err != nil {
+		t.Fatalf("create settings: %v", err)
+	}
+	payload := settingsUpdatePayload(map[string]any{"timezone": "Not/AZone"})
+	body, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	recorder := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPut, "/api/settings", bytes.NewReader(body))
+	(&App{DB: db}).UpdateSettings(recorder, req)
+
+	if recorder.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d body = %s", recorder.Code, recorder.Body.String())
+	}
+	var settings models.SystemSetting
+	if err := db.First(&settings, 1).Error; err != nil {
+		t.Fatal(err)
+	}
+	if settings.Timezone != "Asia/Shanghai" {
+		t.Fatalf("timezone = %q", settings.Timezone)
+	}
+}
+
+func TestUpdateSettingsRejectsNonObjectJSON(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open("file:settings-non-object-json?mode=memory&cache=shared"), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	if err := db.AutoMigrate(models.All()...); err != nil {
+		t.Fatalf("auto migrate: %v", err)
+	}
+	if err := db.Create(&models.SystemSetting{ID: 1, Timezone: "Asia/Shanghai", LogRetentionDays: 9}).Error; err != nil {
+		t.Fatalf("create settings: %v", err)
+	}
+
+	recorder := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPut, "/api/settings", bytes.NewReader([]byte("null")))
+	(&App{DB: db}).UpdateSettings(recorder, req)
+
+	if recorder.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d body = %s", recorder.Code, recorder.Body.String())
+	}
+	var settings models.SystemSetting
+	if err := db.First(&settings, 1).Error; err != nil {
+		t.Fatal(err)
+	}
+	if settings.LogRetentionDays != 9 {
+		t.Fatalf("log retention days = %d, want 9", settings.LogRetentionDays)
+	}
+}
+
+func TestUpdateSettingsNormalizesTimezoneWhitespace(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open("file:settings-timezone-whitespace?mode=memory&cache=shared"), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	if err := db.AutoMigrate(models.All()...); err != nil {
+		t.Fatalf("auto migrate: %v", err)
+	}
+	if err := db.Create(&models.SystemSetting{ID: 1, Timezone: "Asia/Shanghai"}).Error; err != nil {
+		t.Fatalf("create settings: %v", err)
+	}
+	payload := settingsUpdatePayload(map[string]any{"timezone": "  UTC  "})
+	body, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	recorder := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPut, "/api/settings", bytes.NewReader(body))
+	(&App{DB: db}).UpdateSettings(recorder, req)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d body = %s", recorder.Code, recorder.Body.String())
+	}
+	var settings models.SystemSetting
+	if err := db.First(&settings, 1).Error; err != nil {
+		t.Fatal(err)
+	}
+	if settings.Timezone != "UTC" {
+		t.Fatalf("timezone = %q", settings.Timezone)
+	}
+}
+
+func settingsUpdatePayload(overrides map[string]any) map[string]any {
+	payload := map[string]any{
+		"timezone":                         "Asia/Shanghai",
+		"schedule_enabled":                 true,
+		"daily_run_time":                   "09:00",
+		"checkin_concurrency":              1,
+		"checkin_global_concurrency":       4,
+		"checkin_interval_seconds":         1,
+		"retry_count":                      1,
+		"request_timeout":                  20,
+		"only_enabled_sites":               true,
+		"desktop_keep_running":             false,
+		"database_backup_enabled":          false,
+		"database_backup_dir":              "",
+		"database_backup_interval_minutes": 1440,
+		"database_backup_retention":        7,
+		"log_retention_days":               3,
+		"feature_flags":                    map[string]bool{},
+	}
+	for key, value := range overrides {
+		payload[key] = value
+	}
+	return payload
 }
 
 func TestImportRuntimeDatabaseCopiesAndReopensDB(t *testing.T) {

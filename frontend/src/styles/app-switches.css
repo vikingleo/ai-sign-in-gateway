@@ -1,0 +1,126 @@
+.ant-switch.app-switch {
+  min-width: var(--switch-width-text) !important;
+  height: var(--switch-height) !important;
+  line-height: var(--switch-height) !important;
+  border-radius: var(--radius-control) !important;
+  background: var(--switch-track-off) !important;
+  vertical-align: middle !important;
+}
+
+.ant-switch.app-switch--compact {
+  min-width: var(--switch-width-compact) !important;
+}
+
+.ant-switch.app-switch--text {
+  min-width: var(--switch-width-text) !important;
+}
+
+.ant-switch.app-switch--wide {
+  min-width: var(--switch-width-wide) !important;
+}
+
+.ant-switch.app-switch--compact .ant-switch-inner-checked,
+.ant-switch.app-switch--compact .ant-switch-inner-unchecked {
+  font-size: 12px !important;
+}
+
+.ant-switch.app-switch.ant-switch-checked {
+  background: var(--accent) !important;
+}
+
+.ant-switch.app-switch:not(.ant-switch-disabled):hover {
+  background: var(--switch-track-off-hover) !important;
+}
+
+.ant-switch.app-switch.ant-switch-checked:not(.ant-switch-disabled):hover {
+  background: var(--accent-strong) !important;
+}
+
+.ant-switch.app-switch.ant-switch-disabled {
+  background: var(--switch-track-disabled) !important;
+  cursor: not-allowed !important;
+}
+
+.ant-switch.app-switch.ant-switch-checked.ant-switch-disabled {
+  background: var(--switch-track-disabled-checked) !important;
+}
+
+.ant-switch.app-switch.ant-switch-disabled .ant-switch-inner-checked,
+.ant-switch.app-switch.ant-switch-disabled .ant-switch-inner-unchecked,
+.ant-switch.app-switch.ant-switch-checked.ant-switch-disabled .ant-switch-inner-checked {
+  color: var(--switch-text-disabled) !important;
+}
+
+.ant-switch.app-switch .ant-switch-handle {
+  inset-inline-start: var(--switch-handle-offset) !important;
+  top: var(--switch-handle-offset) !important;
+  width: var(--switch-handle-size) !important;
+  height: var(--switch-handle-size) !important;
+}
+
+.ant-switch.app-switch.ant-switch-checked .ant-switch-handle {
+  inset-inline-start: calc(100% - var(--switch-handle-size) - var(--switch-handle-offset)) !important;
+}
+
+.ant-switch.app-switch .ant-switch-handle::before {
+  border-radius: var(--radius-xs) !important;
+}
+
+.ant-switch.app-switch:not(.ant-switch-disabled):active .ant-switch-handle::before,
+.ant-switch.app-switch.ant-switch-checked:not(.ant-switch-disabled):active .ant-switch-handle::before {
+  inset-block: 0 !important;
+  inset-inline-start: 0 !important;
+  inset-inline-end: 0 !important;
+}
+
+.ant-switch.app-switch .ant-switch-inner {
+  position: absolute !important;
+  inset: 1px !important;
+  height: calc(var(--switch-height) - 2px) !important;
+  min-height: calc(var(--switch-height) - 2px) !important;
+  padding: 0 !important;
+  border-radius: var(--radius-control) !important;
+}
+
+.ant-switch.app-switch .ant-switch-inner-checked,
+.ant-switch.app-switch .ant-switch-inner-unchecked {
+  position: absolute !important;
+  inset-block: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 0 !important;
+  height: calc(var(--switch-height) - 2px) !important;
+  min-height: calc(var(--switch-height) - 2px) !important;
+  margin: 0 !important;
+  color: var(--switch-text-off) !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  pointer-events: none !important;
+  transition: opacity 0.16s ease !important;
+}
+
+.ant-switch.app-switch .ant-switch-inner-checked {
+  inset-inline-start: var(--switch-text-pad) !important;
+  inset-inline-end: calc(var(--switch-handle-size) + var(--switch-handle-gap)) !important;
+  opacity: 0 !important;
+}
+
+.ant-switch.app-switch .ant-switch-inner-unchecked {
+  inset-inline-start: calc(var(--switch-handle-size) + var(--switch-handle-gap)) !important;
+  inset-inline-end: var(--switch-text-pad) !important;
+  opacity: 1 !important;
+}
+
+.ant-switch.app-switch.ant-switch-checked .ant-switch-inner-checked {
+  color: var(--switch-text-on) !important;
+  opacity: 1 !important;
+}
+
+.ant-switch.app-switch.ant-switch-checked .ant-switch-inner-unchecked {
+  opacity: 0 !important;
+}
